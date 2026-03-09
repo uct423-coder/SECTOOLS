@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
@@ -7,7 +8,7 @@ from InquirerPy import inquirer
 CONFIG_PATH = Path.home() / ".sectools-config.json"
 
 DEFAULT_CONFIG = {
-    "default_wordlist": "/usr/share/wordlists/rockyou.txt",
+    "default_wordlist": "rockyou.txt" if os.name == "nt" else "/usr/share/wordlists/rockyou.txt",
     "notifications_enabled": True,
     "theme_color": "cyan",
     "log_retention_days": 30,

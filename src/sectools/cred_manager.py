@@ -40,7 +40,8 @@ def _load_store() -> dict | None:
 
 def _save_store(store: dict):
     CREDS_FILE.write_text(json.dumps(store, indent=2))
-    os.chmod(CREDS_FILE, 0o600)
+    if os.name != "nt":
+        os.chmod(CREDS_FILE, 0o600)
 
 
 def _unlock(console: Console) -> tuple | None:

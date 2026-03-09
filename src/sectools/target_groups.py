@@ -9,12 +9,16 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
+import os
+
 from sectools.utils import (
     _load_targets_json,
     _save_targets_json,
     check_installed,
     run_logged,
 )
+
+_default_wordlist = "common.txt" if os.name == "nt" else "/usr/share/wordlists/dirb/common.txt"
 
 SCAN_TOOLS = {
     "nmap fast scan (-F)": ["nmap", "-F"],
@@ -25,7 +29,7 @@ SCAN_TOOLS = {
         "gobuster",
         "dir",
         "-w",
-        "/usr/share/wordlists/dirb/common.txt",
+        _default_wordlist,
         "-u",
     ],
 }

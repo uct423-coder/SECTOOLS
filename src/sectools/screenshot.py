@@ -14,14 +14,22 @@ from sectools.utils import LOGS_DIR
 
 SCREENSHOTS_DIR = LOGS_DIR / "screenshots"
 
-CHROME_CANDIDATES = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    "google-chrome",
-    "google-chrome-stable",
-    "chromium",
-    "chromium-browser",
-]
+if os.name == "nt":
+    CHROME_CANDIDATES = [
+        os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
+        os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
+        os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
+        "chrome",
+    ]
+else:
+    CHROME_CANDIDATES = [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        "google-chrome",
+        "google-chrome-stable",
+        "chromium",
+        "chromium-browser",
+    ]
 
 
 def _find_chrome() -> str | None:
@@ -32,7 +40,7 @@ def _find_chrome() -> str | None:
 
 
 def _safari_available() -> bool:
-    return os.path.isdir("/Applications/Safari.app")
+    return os.name != "nt" and os.path.isdir("/Applications/Safari.app")
 
 
 def _screenshot_chrome(console: Console, chrome: str, url: str, output_path: Path):
