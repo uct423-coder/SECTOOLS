@@ -11,7 +11,7 @@ from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installe
 from sectools.config import load_config
 from sectools.tips import get_tip
 
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 
 
 def _format_size(size_bytes: int) -> str:
