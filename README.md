@@ -49,10 +49,13 @@ python3 -m venv .venv
 ```bash
 sectool start              # Launch the interactive menu
 sectool update             # Pull latest changes from git and reinstall
+sectool reinstall          # Clean reinstall (recreate venv and relink)
+sectool uninstall          # Remove SecTools (venv, symlinks, optionally data)
 sectool version            # Show version number
 sectool status             # Quick tool status check
 sectool hash <value>       # Identify a hash type from the command line
 sectool encode base64 hi   # Quick encode (base64, url, hex, rot13)
+sectool help               # Show all available commands
 ```
 
 ## What the installer does
