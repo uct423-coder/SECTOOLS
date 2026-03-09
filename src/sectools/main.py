@@ -20,17 +20,17 @@ from sectools.utils import (
 from sectools.cheatsheets import cheatsheet_menu
 from sectools.diff_scans import diff_scans
 from sectools.scheduler import schedule_scan, view_scheduled
-from sectools.plugins import plugins_menu, discover_plugins
+from sectools.plugins import plugins_menu
+from sectools.dashboard import show_dashboard
+from sectools.config import config_menu
+from sectools import (
+    hash_id, revshell, encoding, port_ref,
+    subnet_calc, passgen, http_probe,
+    scan_history, wordlist_mgr, target_groups,
+    scan_profiles, auto_installer,
+)
 
 console = Console()
-
-BANNER = r"""
-   _____ ______  ______ ______  ____   ____  __   _____
-  / ___// ____/ / ____//_  __/ / __ \ / __ \/ /  / ___/
-  \__ \/ __/   / /      / /   / / / // / / // /   \__ \
- ___/ / /___  / /___   / /   / /_/ // /_/ // /______/ /
-/____/_____/  \____/  /_/    \____/ \____//_____/____/
-"""
 
 MENU_CHOICES = [
     Separator("── Recon ──"),
@@ -45,33 +45,75 @@ MENU_CHOICES = [
     Separator("── Password Cracking ──"),
     "John the Ripper — Password Cracker",
     "Hashcat — GPU Password Cracker",
-    Separator("── Utilities ──"),
+    Separator("── Networking ──"),
     "Netcat — Network Swiss Army Knife",
-    Separator("── Other ──"),
-    "Tool Status — Check installed tools",
+    "HTTP Probe — Quick URL Scanner",
+    "Port Reference — Common Ports Lookup",
+    "Subnet Calculator — IP/CIDR Math",
+    Separator("── Generators ──"),
+    "Reverse Shell Generator",
+    "Password Generator",
+    "Encoding / Decoding",
+    Separator("── Analysis ──"),
+    "Hash Identifier",
+    "Scan History Browser",
+    "Diff Scans",
+    Separator("── Management ──"),
     "View Saved Targets",
     "Edit Target Notes",
-    "Cheat Sheets",
-    "Diff Scans",
+    "Target Groups",
+    "Scan Profiles",
+    "Wordlist Manager",
     "Schedule a Scan",
     "View Scheduled Scans",
+    Separator("── Other ──"),
+    "Tool Status — Check installed tools",
+    "Install Missing Tools",
     "Generate Report",
+    "Cheat Sheets",
+    "Settings",
     "Plugins",
     "Clear Screen",
     "Exit",
 ]
 
 HANDLERS = {
+    # Recon
     "Recon Autopilot — Auto-scan a target": recon_tool.run,
     "Nmap — Network Scanner": nmap_tool.run,
     "Nikto — Web Server Scanner": nikto_tool.run,
     "Gobuster — Directory & DNS Brute Force": gobuster_tool.run,
+    # Exploitation
     "Metasploit — Exploitation Framework": msf_tool.run,
     "SQLMap — SQL Injection Tester": sqlmap_tool.run,
     "Hydra — Brute Force": hydra_tool.run,
+    # Password Cracking
     "John the Ripper — Password Cracker": john_tool.run,
     "Hashcat — GPU Password Cracker": hashcat_tool.run,
+    # Networking
     "Netcat — Network Swiss Army Knife": netcat_tool.run,
+    "HTTP Probe — Quick URL Scanner": http_probe.run,
+    "Port Reference — Common Ports Lookup": port_ref.run,
+    "Subnet Calculator — IP/CIDR Math": subnet_calc.run,
+    # Generators
+    "Reverse Shell Generator": revshell.run,
+    "Password Generator": passgen.run,
+    "Encoding / Decoding": encoding.run,
+    # Analysis
+    "Hash Identifier": hash_id.run,
+    "Scan History Browser": scan_history.run,
+    "Diff Scans": lambda c: diff_scans(c),
+    # Management
+    "Target Groups": target_groups.run,
+    "Scan Profiles": scan_profiles.run,
+    "Wordlist Manager": wordlist_mgr.run,
+    "Schedule a Scan": lambda c: schedule_scan(c),
+    "View Scheduled Scans": lambda c: view_scheduled(c),
+    # Other
+    "Install Missing Tools": auto_installer.run,
+    "Cheat Sheets": lambda c: cheatsheet_menu(c),
+    "Settings": lambda c: config_menu(c),
+    "Plugins": lambda c: plugins_menu(c),
 }
 
 
@@ -83,14 +125,14 @@ def view_targets(console: Console):
     console.rule("[bold cyan]Saved Targets[/bold cyan]")
     for i, e in enumerate(entries, 1):
         note = f" [dim]— {e['notes']}[/dim]" if e.get("notes") else ""
-        console.print(f"  [cyan]{i}.[/cyan] {e['target']}{note}")
+        group = f" [magenta][{e.get('group', '')}][/magenta]" if e.get("group") else ""
+        console.print(f"  [cyan]{i}.[/cyan] {e['target']}{group}{note}")
     console.print(f"\n[dim]Stored in {TARGETS_FILE}[/dim]")
 
 
 def main():
     os.system("clear" if os.name != "nt" else "cls")
-    console.print(Panel(Text(BANNER, style="bold cyan"), title="Security Toolkit", border_style="bright_blue"))
-    console.print("[dim]Educational security testing toolkit. Use responsibly.[/dim]\n")
+    show_dashboard(console)
 
     while True:
         try:
@@ -111,20 +153,11 @@ def main():
             view_targets(console)
         elif choice == "Edit Target Notes":
             edit_target_notes(console)
-        elif choice == "Cheat Sheets":
-            cheatsheet_menu(console)
-        elif choice == "Diff Scans":
-            diff_scans(console)
-        elif choice == "Schedule a Scan":
-            schedule_scan(console)
-        elif choice == "View Scheduled Scans":
-            view_scheduled(console)
         elif choice == "Generate Report":
             generate_report(console)
-        elif choice == "Plugins":
-            plugins_menu(console)
         elif choice == "Clear Screen":
             os.system("clear" if os.name != "nt" else "cls")
+            show_dashboard(console)
             continue
         elif choice in HANDLERS:
             try:

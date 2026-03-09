@@ -5,6 +5,12 @@ import platform
 
 def notify(title: str, message: str):
     """Send a desktop notification. No dependencies required."""
+    try:
+        from sectools.config import load_config
+        if not load_config().get("notifications_enabled", True):
+            return
+    except Exception:
+        pass
     system = platform.system()
     try:
         if system == "Darwin":

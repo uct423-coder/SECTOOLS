@@ -47,8 +47,12 @@ python3 -m venv .venv
 ## Commands
 
 ```bash
-sectool start    # Launch the interactive menu
-sectool update   # Pull latest changes from git and reinstall
+sectool start              # Launch the interactive menu
+sectool update             # Pull latest changes from git and reinstall
+sectool version            # Show version number
+sectool status             # Quick tool status check
+sectool hash <value>       # Identify a hash type from the command line
+sectool encode base64 hi   # Quick encode (base64, url, hex, rot13)
 ```
 
 ## What the installer does
@@ -83,25 +87,62 @@ sectool update   # Pull latest changes from git and reinstall
 | **John the Ripper** | CPU-based password hash cracking |
 | **Hashcat** | GPU-accelerated password hash cracking |
 
-### Utilities
+### Networking
 | Tool | Description |
 |------|-------------|
 | **Netcat** | Network connections, listeners, and port scanning |
+| **HTTP Probe** | Quick URL scanner — status, headers, SSL, redirects |
+| **Port Reference** | Look up common ports and services |
+| **Subnet Calculator** | IP/CIDR math — network, broadcast, host range |
+
+### Generators
+| Tool | Description |
+|------|-------------|
+| **Reverse Shell Generator** | Generate payloads in 9 languages (Bash, Python, PHP, etc.) |
+| **Password Generator** | Secure passwords with configurable length and charset |
+| **Encoding / Decoding** | Base64, URL, hex, ROT13, HTML entities, binary |
+
+### Analysis
+| Tool | Description |
+|------|-------------|
+| **Hash Identifier** | Auto-detect hash types with hashcat/john format info |
+| **Scan History Browser** | Browse, search, view, and delete past scan logs |
+| **Diff Scans** | Compare two scan results with colored diff output |
+
+### Management
+| Tool | Description |
+|------|-------------|
+| **Target Groups** | Organize targets into named groups, scan all at once |
+| **Scan Profiles** | Save custom scan configs as reusable profiles |
+| **Wordlist Manager** | List, download, and manage wordlists |
+| **Scan Scheduler** | Schedule scans to run on a delay or repeating interval |
 
 ## Features
 
+- **Interactive dashboard** — stats overview on startup with targets, scans, tools, and disk usage
 - **Guided menus** — pick scan types from presets, no flag memorization
 - **Cheat sheets** — built-in flag reference for every tool
 - **Auto URL cleanup** — enter `https://example.com` and it extracts the hostname
-- **Saved targets with notes** — targets are remembered across sessions with optional annotations
+- **Saved targets with notes** — targets remembered across sessions with annotations
+- **Target groups** — organize targets and scan entire groups at once
+- **Scan profiles** — save and reuse custom tool+flag combos
 - **Auto-logging** — all scan results saved to `~/sectools-logs/`
-- **Diff scans** — compare two scan results side by side with colored diff
+- **Scan history browser** — search and browse past scan results
+- **Diff scans** — compare two scan results side by side
 - **HTML & PDF reports** — generate reports from your scan history
-- **Scan scheduler** — schedule scans to run on a delay or repeating interval
+- **Scan scheduler** — schedule delayed or repeating scans
 - **Desktop notifications** — get notified when scans complete
-- **Plugin system** — drop `.py` files in `~/.sectools-plugins/` to add custom tools
-- **Tool status** — see which tools are installed at a glance
-- **Recon autopilot** — run multiple scans on a target with one command
+- **Wordlist manager** — download and manage wordlists from the menu
+- **Auto-installer** — install missing security tools from the menu
+- **Hash identifier** — paste a hash, instantly know the type
+- **Reverse shell generator** — generate payloads in 9 languages
+- **Password generator** — cryptographically secure password generation
+- **Encoding/decoding** — Base64, URL, hex, ROT13, HTML, binary
+- **HTTP probe** — quick URL scanning with header and SSL info
+- **Port reference** — look up 80+ common ports and services
+- **Subnet calculator** — IP/CIDR network math
+- **Plugin system** — drop `.py` files in `~/.sectools-plugins/`
+- **Persistent config** — customize settings in `~/.sectools-config.json`
 - **Self-update** — `sectool update` pulls the latest version from git
 - **Cross-platform** — works on macOS, Windows, and Linux
 
@@ -117,6 +158,18 @@ def run(console):
 ```
 
 It will appear in the Plugins menu automatically.
+
+## Configuration
+
+Settings are stored in `~/.sectools-config.json` and editable from the Settings menu:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `default_wordlist` | `/usr/share/wordlists/rockyou.txt` | Default wordlist path |
+| `notifications_enabled` | `true` | Desktop notifications on scan complete |
+| `theme_color` | `cyan` | UI accent color |
+| `log_retention_days` | `30` | Log retention period |
+| `auto_save_targets` | `false` | Auto-save targets without prompting |
 
 ## Requirements
 
