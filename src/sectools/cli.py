@@ -21,21 +21,59 @@ def cmd_start():
 
 def cmd_update():
     repo = get_repo_dir()
-    print(f"Updating SecTools from {repo}...")
 
-    result = subprocess.run(["git", "-C", str(repo), "pull", "--ff-only"],
-                            capture_output=True, text=True)
-    print(result.stdout, end="")
-    if result.returncode != 0:
-        print(result.stderr, end="")
-        print("Update failed. Try: git pull manually.")
-        sys.exit(1)
+    # Get current commit before pull
+    before = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
+        capture_output=True, text=True,
+    ).stdout.strip()
 
-    # Reinstall package to pick up changes
-    venv_pip = repo / ".venv" / "bin" / "pip"
-    pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
-    subprocess.run([pip_cmd, "install", "-e", str(repo), "--quiet"])
-    print("Update complete!")
+    print(f"Checking for updates...")
+
+    # Fetch first to check if there are remote changes
+    subprocess.run(["git", "-C", str(repo), "fetch"], capture_output=True)
+
+    # Check if local is behind remote
+    status = subprocess.run(
+        ["git", "-C", str(repo), "status", "-uno"],
+        capture_output=True, text=True,
+    ).stdout
+
+    if "Your branch is behind" in status:
+        result = subprocess.run(
+            ["git", "-C", str(repo), "pull", "--ff-only"],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print(result.stderr, end="")
+            print("Update failed. Try: git pull manually.")
+            sys.exit(1)
+
+        after = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+
+        # Show what changed
+        log = subprocess.run(
+            ["git", "-C", str(repo), "log", "--oneline", f"{before}..{after}"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+
+        print(f"Updated: {before} → {after}")
+        if log:
+            print(f"\nNew commits:")
+            for line in log.splitlines():
+                print(f"  {line}")
+
+        # Reinstall package to pick up changes
+        venv_pip = repo / ".venv" / "bin" / "pip"
+        pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
+        subprocess.run([pip_cmd, "install", "-e", str(repo), "--quiet"])
+        print("\nUpdate complete! Restart sectool to use the new version.")
+    else:
+        from sectools.dashboard import VERSION
+        print(f"Already on the latest version (v{VERSION}, commit {before}).")
 
 
 def cmd_version():
