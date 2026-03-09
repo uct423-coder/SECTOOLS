@@ -11,8 +11,20 @@ MODES = {
 
 from pathlib import Path
 
-_REPO_DIR = Path(__file__).resolve().parent.parent.parent
-DEFAULT_WORDLIST = str(_REPO_DIR / "wordlists" / "common.txt")
+def _find_wordlist() -> str:
+    """Find common.txt wordlist, checking several likely locations."""
+    candidates = [
+        Path(__file__).resolve().parent.parent.parent / "wordlists" / "common.txt",
+        Path.home() / "wordlists" / "common.txt",
+        Path("/usr/share/wordlists/dirb/common.txt"),
+        Path("/usr/share/seclists/Discovery/Web-Content/common.txt"),
+    ]
+    for c in candidates:
+        if c.exists():
+            return str(c)
+    return str(candidates[0])  # fallback to repo-relative
+
+DEFAULT_WORDLIST = _find_wordlist()
 
 
 def run(console: Console):
