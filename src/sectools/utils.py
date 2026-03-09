@@ -160,6 +160,14 @@ def ask_target(console: Console, message: str = "Target (IP/hostname):") -> str 
         if choice != "Enter new target":
             # Extract target from display string
             target = choice.split(" (")[0] if " (" in choice else choice
+            # Scope check
+            from sectools.scope import is_in_scope
+            scope_result = is_in_scope(target)
+            if scope_result is False:
+                console.print(f"[bold yellow]⚠ Warning: {target} is OUT OF SCOPE[/bold yellow]")
+                proceed = inquirer.confirm(message="Proceed anyway?", default=False).execute()
+                if not proceed:
+                    return None
             return target
 
     target = inquirer.text(message=message).execute().strip()
@@ -168,7 +176,117 @@ def ask_target(console: Console, message: str = "Target (IP/hostname):") -> str 
         return None
 
     save_target(target)
+
+    # Scope check
+    from sectools.scope import is_in_scope
+    scope_result = is_in_scope(target)
+    if scope_result is False:
+        console.print(f"[bold yellow]⚠ Warning: {target} is OUT OF SCOPE[/bold yellow]")
+        proceed = inquirer.confirm(message="Proceed anyway?", default=False).execute()
+        if not proceed:
+            return None
+
     return target
+
+
+def _html_style():
+    return """body { background: #1a1a2e; color: #e0e0e0; font-family: 'Courier New', monospace; padding: 40px; }
+h1 { color: #00d4ff; border-bottom: 2px solid #00d4ff; padding-bottom: 10px; }
+h2 { color: #ff6b6b; margin-top: 30px; }
+h3 { color: #00d4ff; }
+.scan { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 20px; margin: 15px 0; }
+.meta { color: #888; font-size: 0.85em; margin-bottom: 10px; }
+pre { background: #0a0a1a; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
+.badge { display: inline-block; background: #00d4ff; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }
+.section { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 20px; margin: 15px 0; }"""
+
+
+def _build_technical(logs, timestamp):
+    """Build Technical Detail report (original behavior)."""
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    html = [
+        f"<!DOCTYPE html><html><head><title>SecTools Report</title><style>{_html_style()}</style></head><body>",
+        f"<h1>SecTools Scan Report</h1>",
+        f"<p class='meta'>Generated: {now}</p>",
+        f"<p><span class='badge'>{len(logs)} scans</span></p>",
+    ]
+    for log in logs[:20]:
+        content = log.read_text()
+        name = log.stem.replace("_", " ").title()
+        mtime = datetime.datetime.fromtimestamp(log.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        html.append(f"<div class='scan'><h2>{name}</h2>")
+        html.append(f"<p class='meta'>{mtime}</p>")
+        safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        html.append(f"<pre>{safe_content}</pre></div>")
+    html.append("</body></html>")
+    return html
+
+
+def _build_executive(logs, timestamp):
+    """Build Executive Summary report — high-level overview, no raw output."""
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # Extract unique targets from log filenames
+    targets = set()
+    for log in logs[:20]:
+        parts = log.stem.split("_")
+        if len(parts) >= 2:
+            targets.add(parts[-2] if len(parts) > 2 else parts[0])
+    html = [
+        f"<!DOCTYPE html><html><head><title>Executive Summary</title><style>{_html_style()}</style></head><body>",
+        f"<h1>Executive Summary</h1>",
+        f"<p class='meta'>Generated: {now}</p>",
+        f"<div class='section'>",
+        f"<h2>Overview</h2>",
+        f"<p>Total scans performed: <strong>{len(logs)}</strong></p>",
+        f"<p>Unique scan types: <strong>{len({l.stem.split('_')[0] for l in logs[:20]})}</strong></p>",
+        f"<p>Report period: last {len(logs[:20])} scans</p>",
+        f"</div>",
+        f"<div class='section'>",
+        f"<h2>Target Summary</h2>",
+        f"<ul>",
+    ]
+    for t in sorted(targets):
+        html.append(f"<li>{t}</li>")
+    html.append("</ul></div>")
+    html.append("<div class='section'><h2>Scan Activity</h2><table border='1' cellpadding='8' style='border-collapse:collapse;width:100%;color:#e0e0e0'>")
+    html.append("<tr><th>Scan</th><th>Date</th></tr>")
+    for log in logs[:20]:
+        name = log.stem.replace("_", " ").title()
+        mtime = datetime.datetime.fromtimestamp(log.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+        html.append(f"<tr><td>{name}</td><td>{mtime}</td></tr>")
+    html.append("</table></div></body></html>")
+    return html
+
+
+def _build_compliance(logs, timestamp):
+    """Build Compliance report — structured sections."""
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    html = [
+        f"<!DOCTYPE html><html><head><title>Compliance Report</title><style>{_html_style()}</style></head><body>",
+        f"<h1>Compliance Assessment Report</h1>",
+        f"<p class='meta'>Generated: {now}</p>",
+        f"<div class='section'><h2>1. Scope</h2>",
+        f"<p>This report covers {len(logs)} scan(s) stored in the SecTools log directory.</p></div>",
+        f"<div class='section'><h2>2. Methodology</h2>",
+        f"<p>Scans were performed using SecTools CLI with the following tools:</p><ul>",
+    ]
+    tools_used = sorted({l.stem.split("_")[0] for l in logs[:20]})
+    for tool in tools_used:
+        html.append(f"<li>{tool}</li>")
+    html.append("</ul></div>")
+    html.append(f"<div class='section'><h2>3. Findings</h2>")
+    for log in logs[:20]:
+        content = log.read_text()
+        name = log.stem.replace("_", " ").title()
+        mtime = datetime.datetime.fromtimestamp(log.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        html.append(f"<h3>{name}</h3><p class='meta'>{mtime}</p><pre>{safe_content}</pre>")
+    html.append("</div>")
+    html.append(f"<div class='section'><h2>4. Recommendations</h2>")
+    html.append("<p>Review all findings above and prioritise remediation based on risk severity.</p>")
+    html.append("<p>Re-scan after remediation to verify fixes.</p></div>")
+    html.append("</body></html>")
+    return html
 
 
 def generate_report(console: Console):
@@ -182,41 +300,28 @@ def generate_report(console: Console):
         console.print("[red]No logs found.[/red]")
         return
 
+    from InquirerPy import inquirer
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Template choice
+    template = inquirer.select(
+        message="Report template:",
+        choices=["Technical Detail (full)", "Executive Summary", "Compliance"],
+        pointer="❯",
+    ).execute()
+
+    if template.startswith("Executive"):
+        html = _build_executive(logs, timestamp)
+    elif template.startswith("Compliance"):
+        html = _build_compliance(logs, timestamp)
+    else:
+        html = _build_technical(logs, timestamp)
+
     report_file = LOGS_DIR / f"report_{timestamp}.html"
-
-    html = [
-        "<!DOCTYPE html><html><head>",
-        "<title>SecTools Report</title>",
-        "<style>",
-        "body { background: #1a1a2e; color: #e0e0e0; font-family: 'Courier New', monospace; padding: 40px; }",
-        "h1 { color: #00d4ff; border-bottom: 2px solid #00d4ff; padding-bottom: 10px; }",
-        "h2 { color: #ff6b6b; margin-top: 30px; }",
-        ".scan { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 20px; margin: 15px 0; }",
-        ".meta { color: #888; font-size: 0.85em; margin-bottom: 10px; }",
-        "pre { background: #0a0a1a; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }",
-        ".badge { display: inline-block; background: #00d4ff; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }",
-        "</style></head><body>",
-        f"<h1>SecTools Scan Report</h1>",
-        f"<p class='meta'>Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>",
-        f"<p><span class='badge'>{len(logs)} scans</span></p>",
-    ]
-
-    for log in logs[:20]:  # Last 20 scans
-        content = log.read_text()
-        name = log.stem.replace("_", " ").title()
-        mtime = datetime.datetime.fromtimestamp(log.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-        html.append(f"<div class='scan'><h2>{name}</h2>")
-        html.append(f"<p class='meta'>{mtime}</p>")
-        # Escape HTML
-        safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        html.append(f"<pre>{safe_content}</pre></div>")
-
-    html.append("</body></html>")
     report_file.write_text("\n".join(html))
     console.print(f"[bold green]HTML report saved: {report_file}[/bold green]")
 
-    from InquirerPy import inquirer
     export = inquirer.select(
         message="Open as:",
         choices=["Browser (HTML)", "PDF", "Both"],

@@ -8,8 +8,10 @@ from rich.columns import Columns
 from rich.text import Text
 
 from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installed
+from sectools.config import load_config
+from sectools.tips import get_tip
 
-VERSION = "1.0.5"
+VERSION = "1.0.6"
 
 
 def _format_size(size_bytes: int) -> str:
@@ -53,14 +55,24 @@ def _recent_scans(n: int = 5) -> list[str]:
 
 def show_dashboard(console: Console):
     """Display the startup dashboard."""
+    config = load_config()
+    theme = config.get("theme_color", "cyan")
+
+    # Session indicator
+    from sectools.sessions import get_active_session
+    session = get_active_session()
+
     # Header
     header_text = Text(justify="center")
     header_text.append("SecTools CLI\n", style="bold white")
     header_text.append("Made by Shepard Sotiroglou", style="dim")
+    subtitle = f"v{VERSION}"
+    if session:
+        subtitle += f"  |  Session: {session}"
     header = Panel(
         header_text,
-        subtitle=f"v{VERSION}",
-        border_style="cyan",
+        subtitle=subtitle,
+        border_style=theme,
     )
     console.print(header)
 
@@ -82,12 +94,21 @@ def show_dashboard(console: Console):
     recent = _recent_scans()
     if recent:
         scan_table = Table(border_style="dim", expand=True)
-        scan_table.add_column("Recent Scans", style="cyan")
+        scan_table.add_column("Recent Scans", style=theme)
         for name in recent:
             scan_table.add_row(name)
         console.print(Panel(scan_table, title="Recent Scans", border_style="dim"))
     else:
         console.print(Panel("[dim]No scan logs yet.[/dim]", title="Recent Scans", border_style="dim"))
+
+    # Tip of the Day
+    console.print(
+        Panel(
+            f"[bold]{get_tip()}[/bold]",
+            title="Tip of the Day",
+            border_style=theme,
+        )
+    )
 
     # Quick Actions hint
     console.print(

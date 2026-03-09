@@ -12,6 +12,7 @@ DEFAULT_CONFIG = {
     "theme_color": "cyan",
     "log_retention_days": 30,
     "auto_save_targets": False,
+    "favorites": [],
 }
 
 THEME_CHOICES = ["cyan", "green", "red", "blue", "magenta"]

@@ -165,6 +165,100 @@ def _scan_group(console: Console) -> None:
     console.print(f"\n[bold green]Group scan complete.[/bold green]")
 
 
+def _export_targets(console: Console) -> None:
+    """Export targets to JSON or CSV."""
+    import json as _json
+    import csv
+
+    targets = _load_targets_json()
+    if not targets:
+        console.print("[yellow]No targets to export.[/yellow]")
+        return
+
+    fmt = inquirer.select(
+        message="Export format:",
+        choices=["JSON", "CSV"],
+        pointer="❯",
+    ).execute()
+
+    path = inquirer.text(
+        message="Export path:",
+        default=f"sectools-targets.{fmt.lower()}",
+    ).execute().strip()
+    if not path:
+        return
+
+    if fmt == "JSON":
+        with open(path, "w") as f:
+            _json.dump(targets, f, indent=2)
+    else:
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["target", "notes", "group"])
+            writer.writeheader()
+            for t in targets:
+                writer.writerow({
+                    "target": t.get("target", ""),
+                    "notes": t.get("notes", ""),
+                    "group": t.get("group", ""),
+                })
+
+    console.print(f"[green]Exported {len(targets)} targets to {path}[/green]")
+
+
+def _import_targets(console: Console) -> None:
+    """Import targets from JSON or CSV, merging with existing."""
+    import json as _json
+    import csv
+
+    path = inquirer.text(message="Import file path:").execute().strip()
+    if not path:
+        return
+
+    from pathlib import Path as _Path
+    file_path = _Path(path)
+    if not file_path.exists():
+        console.print(f"[red]File not found: {path}[/red]")
+        return
+
+    ext = file_path.suffix.lower()
+    imported = []
+
+    if ext == ".json":
+        try:
+            imported = _json.loads(file_path.read_text())
+        except _json.JSONDecodeError:
+            console.print("[red]Invalid JSON file.[/red]")
+            return
+    elif ext == ".csv":
+        with open(path, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                imported.append({
+                    "target": row.get("target", ""),
+                    "notes": row.get("notes", ""),
+                    "group": row.get("group", ""),
+                })
+    else:
+        console.print("[red]Unsupported format. Use .json or .csv[/red]")
+        return
+
+    if not imported:
+        console.print("[yellow]No targets found in file.[/yellow]")
+        return
+
+    existing = _load_targets_json()
+    existing_targets = {e["target"] for e in existing}
+    added = 0
+    for entry in imported:
+        if entry.get("target") and entry["target"] not in existing_targets:
+            existing.append(entry)
+            existing_targets.add(entry["target"])
+            added += 1
+
+    _save_targets_json(existing)
+    console.print(f"[green]Imported {added} new targets ({len(imported) - added} duplicates skipped).[/green]")
+
+
 def run(console: Console) -> None:
     """Entry point for the Target Groups module."""
     while True:
@@ -176,6 +270,8 @@ def run(console: Console) -> None:
                 "Add Target to Group",
                 "Remove Target from Group",
                 "Scan Group",
+                "Export Targets",
+                "Import Targets",
                 "Back",
             ],
             pointer="❯",
@@ -191,5 +287,9 @@ def run(console: Console) -> None:
             _remove_target_from_group(console)
         elif action == "Scan Group":
             _scan_group(console)
+        elif action == "Export Targets":
+            _export_targets(console)
+        elif action == "Import Targets":
+            _import_targets(console)
         else:
             break
