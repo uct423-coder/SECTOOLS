@@ -64,7 +64,8 @@ def run(console: Console):
         return
 
     scans = RECON_SCANS[preset]
-    wordlist = "/Users/u.c.t./Projects/CLI/wordlists/common.txt"
+    _repo_dir = Path(__file__).resolve().parent.parent.parent
+    wordlist = str(_repo_dir / "wordlists" / "common.txt")
 
     LOGS_DIR.mkdir(exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")

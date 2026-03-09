@@ -9,7 +9,10 @@ MODES = {
     "Virtual host brute-force (vhost)": "vhost",
 }
 
-DEFAULT_WORDLIST = "/Users/u.c.t./Projects/CLI/wordlists/common.txt"
+from pathlib import Path
+
+_REPO_DIR = Path(__file__).resolve().parent.parent.parent
+DEFAULT_WORDLIST = str(_REPO_DIR / "wordlists" / "common.txt")
 
 
 def run(console: Console):

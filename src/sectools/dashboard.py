@@ -9,7 +9,7 @@ from rich.text import Text
 
 from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installed
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 
 def _format_size(size_bytes: int) -> str:
