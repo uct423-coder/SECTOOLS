@@ -1,88 +1,139 @@
 #!/bin/bash
 set -e
 
+# Colors
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+DIM='\033[2m'
+RESET='\033[0m'
+
+clear
+
 echo ""
+echo -e "${CYAN}${BOLD}"
 echo "   _____ ______  ______ ______  ____   ____  __   _____"
 echo "  / ___// ____/ / ____//_  __/ / __ \ / __ \/ /  / ___/"
 echo "  \__ \/ __/   / /      / /   / / / // / / // /   \__ \ "
 echo " ___/ / /___  / /___   / /   / /_/ // /_/ // /______/ /"
 echo "/____/_____/  \____/  /_/    \____/ \____//_____/____/ "
+echo -e "${RESET}"
+echo -e "${BOLD}  Security Toolkit Installer ${DIM}v1.0.2${RESET}"
+echo -e "${DIM}  Made by Shepard Sotiroglou${RESET}"
 echo ""
-echo "SecTools Installer"
-echo "===================="
+echo -e "${DIM}  ─────────────────────────────────────────────${RESET}"
+echo -e "${DIM}  Educational security testing toolkit.${RESET}"
+echo -e "${DIM}  Use responsibly. Only test what you own.${RESET}"
+echo -e "${DIM}  ─────────────────────────────────────────────${RESET}"
 echo ""
 
-# Check for Homebrew
+sleep 1
+
+# ── Step 1: Homebrew ──
+echo -e "${BOLD}[1/6] Checking package manager...${RESET}"
 if ! command -v brew &> /dev/null; then
-    echo "[!] Homebrew not found. Installing..."
+    echo -e "  ${YELLOW}[!] Homebrew not found. Installing...${RESET}"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 else
-    echo "[✓] Homebrew found"
+    echo -e "  ${GREEN}[✓]${RESET} Homebrew found"
 fi
-
-# Install security tools
 echo ""
-echo "[*] Installing security tools..."
+
+# ── Step 2: Security tools ──
+echo -e "${BOLD}[2/6] Installing security tools...${RESET}"
 TOOLS="nmap nikto hydra gobuster john hashcat netcat sqlmap"
+INSTALLED=0
+TOTAL=0
 for tool in $TOOLS; do
+    TOTAL=$((TOTAL + 1))
     if brew list "$tool" &> /dev/null; then
-        echo "  [✓] $tool already installed"
+        echo -e "  ${GREEN}[✓]${RESET} $tool"
+        INSTALLED=$((INSTALLED + 1))
     else
-        echo "  [*] Installing $tool..."
-        brew install "$tool" 2>/dev/null || echo "  [!] Failed to install $tool — skipping"
+        echo -e "  ${CYAN}[*]${RESET} Installing $tool..."
+        if brew install "$tool" 2>/dev/null; then
+            echo -e "  ${GREEN}[✓]${RESET} $tool installed"
+            INSTALLED=$((INSTALLED + 1))
+        else
+            echo -e "  ${RED}[!]${RESET} Failed to install $tool — skipping"
+        fi
     fi
 done
 
 # Metasploit (cask)
+TOTAL=$((TOTAL + 1))
 if brew list --cask metasploit &> /dev/null 2>&1; then
-    echo "  [✓] metasploit already installed"
+    echo -e "  ${GREEN}[✓]${RESET} metasploit"
+    INSTALLED=$((INSTALLED + 1))
 else
-    echo "  [*] Installing metasploit (this may take a while)..."
-    brew install --cask metasploit 2>/dev/null || echo "  [!] Failed to install metasploit — skipping"
+    echo -e "  ${CYAN}[*]${RESET} Installing metasploit (this may take a while)..."
+    if brew install --cask metasploit 2>/dev/null; then
+        echo -e "  ${GREEN}[✓]${RESET} metasploit installed"
+        INSTALLED=$((INSTALLED + 1))
+    else
+        echo -e "  ${RED}[!]${RESET} Failed to install metasploit — skipping"
+    fi
 fi
-
-# Check for Python 3
+echo -e "  ${DIM}$INSTALLED/$TOTAL tools ready${RESET}"
 echo ""
+
+# ── Step 3: Python ──
+echo -e "${BOLD}[3/6] Checking Python...${RESET}"
 if ! command -v python3 &> /dev/null; then
-    echo "[*] Installing Python 3..."
+    echo -e "  ${CYAN}[*]${RESET} Installing Python 3..."
     brew install python3
 else
-    echo "[✓] Python 3 found"
+    PY_VER=$(python3 --version 2>&1)
+    echo -e "  ${GREEN}[✓]${RESET} $PY_VER"
 fi
-
-# Set up virtual environment
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo ""
-echo "[*] Setting up Python virtual environment..."
+
+# ── Step 4: Virtual environment ──
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo -e "${BOLD}[4/6] Setting up environment...${RESET}"
 if [ ! -d "$SCRIPT_DIR/.venv" ]; then
     python3 -m venv "$SCRIPT_DIR/.venv"
-    echo "  [✓] Virtual environment created"
+    echo -e "  ${GREEN}[✓]${RESET} Virtual environment created"
 else
-    echo "  [✓] Virtual environment already exists"
+    echo -e "  ${GREEN}[✓]${RESET} Virtual environment exists"
 fi
-
-# Install Python package
-echo "[*] Installing SecTools..."
-"$SCRIPT_DIR/.venv/bin/pip" install -e "$SCRIPT_DIR" --quiet
-echo "  [✓] SecTools installed"
-
-# Create symlink so 'sectool' works globally
 echo ""
-echo "[*] Setting up 'sectool' command..."
+
+# ── Step 5: Install package ──
+echo -e "${BOLD}[5/6] Installing SecTools package...${RESET}"
+"$SCRIPT_DIR/.venv/bin/pip" install -e "$SCRIPT_DIR" --quiet
+echo -e "  ${GREEN}[✓]${RESET} SecTools installed"
+echo ""
+
+# ── Step 6: Global command ──
+echo -e "${BOLD}[6/6] Setting up global command...${RESET}"
 if [ -d /opt/homebrew/bin ]; then
     ln -sf "$SCRIPT_DIR/.venv/bin/sectool" /opt/homebrew/bin/sectool
-    echo "  [✓] 'sectool' command ready"
+    echo -e "  ${GREEN}[✓]${RESET} 'sectool' command linked"
 elif [ -w /usr/local/bin ]; then
     ln -sf "$SCRIPT_DIR/.venv/bin/sectool" /usr/local/bin/sectool
-    echo "  [✓] 'sectool' command ready"
+    echo -e "  ${GREEN}[✓]${RESET} 'sectool' command linked"
 else
-    echo "  [!] Could not create global command. Run with: $SCRIPT_DIR/.venv/bin/sectool"
+    echo -e "  ${YELLOW}[!]${RESET} Could not create global command."
+    echo -e "  ${DIM}Run with: $SCRIPT_DIR/.venv/bin/sectool${RESET}"
 fi
-
 echo ""
-echo "================================================"
-echo "  Installation complete!"
-echo "  Type 'sectool start' to launch"
-echo "  Type 'sectool update' to update from git"
-echo "================================================"
+
+# ── Done ──
+echo -e "${CYAN}${BOLD}"
+echo "  ╔══════════════════════════════════════════════╗"
+echo "  ║          Installation Complete!              ║"
+echo "  ╠══════════════════════════════════════════════╣"
+echo "  ║                                              ║"
+echo "  ║   sectool start     Launch the toolkit       ║"
+echo "  ║   sectool update    Update to latest          ║"
+echo "  ║   sectool help      Show all commands        ║"
+echo "  ║                                              ║"
+echo "  ╠══════════════════════════════════════════════╣"
+echo "  ║   Made by Shepard Sotiroglou                 ║"
+echo "  ║   github.com/uct423-coder/SECTOOLS           ║"
+echo "  ╚══════════════════════════════════════════════╝"
+echo -e "${RESET}"
 echo ""

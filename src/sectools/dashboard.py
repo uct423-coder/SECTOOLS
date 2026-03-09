@@ -54,8 +54,11 @@ def _recent_scans(n: int = 5) -> list[str]:
 def show_dashboard(console: Console):
     """Display the startup dashboard."""
     # Header
+    header_text = Text(justify="center")
+    header_text.append("SecTools CLI\n", style="bold white")
+    header_text.append("Made by Shepard Sotiroglou", style="dim")
     header = Panel(
-        Text("SecTools CLI", style="bold white", justify="center"),
+        header_text,
         subtitle=f"v{VERSION}",
         border_style="cyan",
     )

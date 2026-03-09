@@ -223,7 +223,8 @@ def cmd_reinstall():
 def cmd_help():
     """Show help with all commands."""
     from sectools.dashboard import VERSION
-    print(f"SecTools v{VERSION}")
+    print(f"\033[1m\033[36mSecTools\033[0m v{VERSION}")
+    print(f"\033[2mMade by Shepard Sotiroglou\033[0m")
     print("")
     print("Usage: sectool <command>")
     print("")
