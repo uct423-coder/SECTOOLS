@@ -66,21 +66,23 @@ echo "[*] Installing SecTools..."
 "$SCRIPT_DIR/.venv/bin/pip" install -e "$SCRIPT_DIR" --quiet
 echo "  [✓] SecTools installed"
 
-# Create symlink so 'start' works globally
+# Create symlink so 'sectool' works globally
 echo ""
-echo "[*] Setting up 'start' command..."
+echo "[*] Setting up 'sectool' command..."
 if [ -d /opt/homebrew/bin ]; then
-    ln -sf "$SCRIPT_DIR/.venv/bin/start" /opt/homebrew/bin/start
-    echo "  [✓] 'start' command ready"
+    ln -sf "$SCRIPT_DIR/.venv/bin/sectool" /opt/homebrew/bin/sectool
+    echo "  [✓] 'sectool' command ready"
 elif [ -w /usr/local/bin ]; then
-    ln -sf "$SCRIPT_DIR/.venv/bin/start" /usr/local/bin/start
-    echo "  [✓] 'start' command ready"
+    ln -sf "$SCRIPT_DIR/.venv/bin/sectool" /usr/local/bin/sectool
+    echo "  [✓] 'sectool' command ready"
 else
-    echo "  [!] Could not create global command. Run with: $SCRIPT_DIR/.venv/bin/start"
+    echo "  [!] Could not create global command. Run with: $SCRIPT_DIR/.venv/bin/sectool"
 fi
 
 echo ""
-echo "============================================"
-echo "  Installation complete! Type 'start' to run"
-echo "============================================"
+echo "================================================"
+echo "  Installation complete!"
+echo "  Type 'sectool start' to launch"
+echo "  Type 'sectool update' to update from git"
+echo "================================================"
 echo ""

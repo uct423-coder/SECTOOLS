@@ -31,9 +31,14 @@ def run(console: Console):
 
     hash_choice = inquirer.select(
         message="Hash type:",
-        choices=list(HASH_TYPES.keys()),
+        choices=list(HASH_TYPES.keys()) + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if hash_choice == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "hashcat")
+        return
 
     hash_type = HASH_TYPES[hash_choice]
     if hash_type is None:

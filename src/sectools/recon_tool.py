@@ -54,9 +54,14 @@ def run(console: Console):
 
     preset = inquirer.select(
         message="Recon type:",
-        choices=list(RECON_SCANS.keys()),
+        choices=list(RECON_SCANS.keys()) + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if preset == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "recon")
+        return
 
     scans = RECON_SCANS[preset]
     wordlist = "/Users/u.c.t./Projects/CLI/wordlists/common.txt"

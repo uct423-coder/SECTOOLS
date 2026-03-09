@@ -17,9 +17,15 @@ def run(console: Console):
 
     mode = inquirer.select(
         message="Mode:",
-        choices=list(MODES.keys()),
+        choices=list(MODES.keys()) + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if mode == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "gobuster")
+        return
+
     mode_flag = MODES[mode]
 
     if mode_flag == "dir":

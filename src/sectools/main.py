@@ -13,7 +13,14 @@ from sectools import (
     hydra_tool, gobuster_tool, john_tool, hashcat_tool,
     netcat_tool, recon_tool,
 )
-from sectools.utils import show_tool_status, generate_report, load_targets, TARGETS_FILE
+from sectools.utils import (
+    show_tool_status, generate_report, load_targets_with_notes,
+    edit_target_notes, TARGETS_FILE,
+)
+from sectools.cheatsheets import cheatsheet_menu
+from sectools.diff_scans import diff_scans
+from sectools.scheduler import schedule_scan, view_scheduled
+from sectools.plugins import plugins_menu, discover_plugins
 
 console = Console()
 
@@ -43,7 +50,13 @@ MENU_CHOICES = [
     Separator("── Other ──"),
     "Tool Status — Check installed tools",
     "View Saved Targets",
+    "Edit Target Notes",
+    "Cheat Sheets",
+    "Diff Scans",
+    "Schedule a Scan",
+    "View Scheduled Scans",
     "Generate Report",
+    "Plugins",
     "Clear Screen",
     "Exit",
 ]
@@ -63,13 +76,14 @@ HANDLERS = {
 
 
 def view_targets(console: Console):
-    targets = load_targets()
-    if not targets:
+    entries = load_targets_with_notes()
+    if not entries:
         console.print("[yellow]No saved targets yet.[/yellow]")
         return
     console.rule("[bold cyan]Saved Targets[/bold cyan]")
-    for i, t in enumerate(targets, 1):
-        console.print(f"  [cyan]{i}.[/cyan] {t}")
+    for i, e in enumerate(entries, 1):
+        note = f" [dim]— {e['notes']}[/dim]" if e.get("notes") else ""
+        console.print(f"  [cyan]{i}.[/cyan] {e['target']}{note}")
     console.print(f"\n[dim]Stored in {TARGETS_FILE}[/dim]")
 
 
@@ -95,8 +109,20 @@ def main():
             show_tool_status(console)
         elif choice == "View Saved Targets":
             view_targets(console)
+        elif choice == "Edit Target Notes":
+            edit_target_notes(console)
+        elif choice == "Cheat Sheets":
+            cheatsheet_menu(console)
+        elif choice == "Diff Scans":
+            diff_scans(console)
+        elif choice == "Schedule a Scan":
+            schedule_scan(console)
+        elif choice == "View Scheduled Scans":
+            view_scheduled(console)
         elif choice == "Generate Report":
             generate_report(console)
+        elif choice == "Plugins":
+            plugins_menu(console)
         elif choice == "Clear Screen":
             os.system("clear" if os.name != "nt" else "cls")
             continue

@@ -74,22 +74,23 @@ echo [*] Installing SecTools...
 echo   [✓] SecTools installed
 
 :: Create batch file shortcut
-echo [*] Setting up 'sectools' command...
+echo [*] Setting up 'sectool' command...
 (
     echo @echo off
-    echo "%~dp0.venv\Scripts\start.exe" %%*
-) > "%~dp0sectools.bat"
-echo   [✓] Run with: sectools.bat
+    echo "%~dp0.venv\Scripts\sectool.exe" %%*
+) > "%~dp0sectool.bat"
+echo   [✓] Run with: sectool.bat
 
 :: Try to add to PATH
 echo.
-echo [*] To run 'sectools' from anywhere, add this folder to your PATH:
+echo [*] To run 'sectool' from anywhere, add this folder to your PATH:
 echo     %~dp0
 echo.
-echo ============================================
+echo ================================================
 echo   Installation complete!
-echo   Run 'sectools.bat' or '.venv\Scripts\start.exe'
-echo ============================================
+echo   Run 'sectool start' to launch
+echo   Run 'sectool update' to update from git
+echo ================================================
 echo.
 pause
 exit /b 0

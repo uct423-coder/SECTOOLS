@@ -19,9 +19,14 @@ def run(console: Console):
 
     service = inquirer.select(
         message="Service to attack:",
-        choices=SERVICES,
+        choices=SERVICES + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if service == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "hydra")
+        return
 
     mode = inquirer.select(
         message="Attack mode:",

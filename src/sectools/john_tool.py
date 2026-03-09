@@ -22,9 +22,14 @@ def run(console: Console):
 
     preset = inquirer.select(
         message="Mode:",
-        choices=list(PRESETS.keys()),
+        choices=list(PRESETS.keys()) + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if preset == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "john")
+        return
 
     val = PRESETS[preset]
     if val is None:

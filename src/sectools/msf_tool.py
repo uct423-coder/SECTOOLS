@@ -69,9 +69,14 @@ def run(console: Console):
 
     action = inquirer.select(
         message="Action:",
-        choices=list(GUIDED_WORKFLOWS.keys()),
+        choices=list(GUIDED_WORKFLOWS.keys()) + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if action == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "metasploit")
+        return
 
     val = GUIDED_WORKFLOWS[action]
 

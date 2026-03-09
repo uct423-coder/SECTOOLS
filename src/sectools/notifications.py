@@ -1,0 +1,27 @@
+import os
+import subprocess
+import platform
+
+
+def notify(title: str, message: str):
+    """Send a desktop notification. No dependencies required."""
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            subprocess.run([
+                "osascript", "-e",
+                f'display notification "{message}" with title "{title}"',
+            ], check=False, capture_output=True)
+        elif system == "Linux":
+            subprocess.run(["notify-send", title, message], check=False, capture_output=True)
+        elif system == "Windows":
+            subprocess.run([
+                "powershell", "-Command",
+                f"[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; "
+                f"$n = New-Object System.Windows.Forms.NotifyIcon; "
+                f"$n.Icon = [System.Drawing.SystemIcons]::Information; "
+                f"$n.Visible = $true; "
+                f"$n.ShowBalloonTip(5000, '{title}', '{message}', 'Info')",
+            ], check=False, capture_output=True)
+    except Exception:
+        pass

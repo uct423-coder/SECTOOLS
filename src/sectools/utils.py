@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import subprocess
 import datetime
@@ -77,31 +78,79 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
         process.wait()
 
     console.print(f"\n[green]Results saved to {log_file}[/green]")
+    from sectools.notifications import notify
+    notify("SecTools", f"{tool_name} scan complete")
     return process
+
+
+def _load_targets_json() -> list[dict]:
+    """Load targets as JSON. Auto-migrates old plain-text format."""
+    if not TARGETS_FILE.exists():
+        return []
+    raw = TARGETS_FILE.read_text().strip()
+    if not raw:
+        return []
+    # Try JSON first
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return data
+    except json.JSONDecodeError:
+        pass
+    # Migrate old plain-text format
+    entries = [{"target": t.strip(), "notes": ""} for t in raw.splitlines() if t.strip()]
+    TARGETS_FILE.write_text(json.dumps(entries, indent=2))
+    return entries
+
+
+def _save_targets_json(targets: list[dict]):
+    TARGETS_FILE.write_text(json.dumps(targets, indent=2))
 
 
 def save_target(target: str):
     """Save a target to the targets file."""
-    existing = load_targets()
-    if target not in existing:
-        with open(TARGETS_FILE, "a") as f:
-            f.write(target + "\n")
+    entries = _load_targets_json()
+    if not any(e["target"] == target for e in entries):
+        entries.append({"target": target, "notes": ""})
+        _save_targets_json(entries)
 
 
 def load_targets() -> list[str]:
-    """Load saved targets."""
-    if not TARGETS_FILE.exists():
-        return []
-    return [t.strip() for t in TARGETS_FILE.read_text().splitlines() if t.strip()]
+    """Load saved targets (returns list of target strings for compatibility)."""
+    return [e["target"] for e in _load_targets_json()]
+
+
+def load_targets_with_notes() -> list[dict]:
+    """Load saved targets with notes."""
+    return _load_targets_json()
+
+
+def edit_target_notes(console: Console):
+    """Let user pick a target and edit its notes."""
+    from InquirerPy import inquirer
+    entries = _load_targets_json()
+    if not entries:
+        console.print("[yellow]No saved targets.[/yellow]")
+        return
+    choices = [f"{e['target']} ({e['notes'] or 'no notes'})" for e in entries]
+    choice = inquirer.select(message="Select target:", choices=choices, pointer="❯").execute()
+    idx = choices.index(choice)
+    note = inquirer.text(message="Note:", default=entries[idx]["notes"]).execute()
+    entries[idx]["notes"] = note
+    _save_targets_json(entries)
+    console.print("[green]Note saved.[/green]")
 
 
 def ask_target(console: Console, message: str = "Target (IP/hostname):") -> str | None:
     """Ask for a target with option to pick from saved targets."""
     from InquirerPy import inquirer
 
-    saved = load_targets()
-    if saved:
-        choices = ["Enter new target"] + saved
+    entries = _load_targets_json()
+    if entries:
+        choices = ["Enter new target"] + [
+            f"{e['target']} ({e['notes']})" if e["notes"] else e["target"]
+            for e in entries
+        ]
         choice = inquirer.select(
             message="Select target:",
             choices=choices,
@@ -109,7 +158,9 @@ def ask_target(console: Console, message: str = "Target (IP/hostname):") -> str 
         ).execute()
 
         if choice != "Enter new target":
-            return choice
+            # Extract target from display string
+            target = choice.split(" (")[0] if " (" in choice else choice
+            return target
 
     target = inquirer.text(message=message).execute().strip()
     if not target:
@@ -163,8 +214,54 @@ def generate_report(console: Console):
 
     html.append("</body></html>")
     report_file.write_text("\n".join(html))
-    console.print(f"[bold green]Report saved: {report_file}[/bold green]")
+    console.print(f"[bold green]HTML report saved: {report_file}[/bold green]")
 
-    # Open in browser
-    import webbrowser
-    webbrowser.open(f"file://{report_file}")
+    from InquirerPy import inquirer
+    export = inquirer.select(
+        message="Open as:",
+        choices=["Browser (HTML)", "PDF", "Both"],
+        pointer="❯",
+    ).execute()
+
+    if export in ("Browser (HTML)", "Both"):
+        import webbrowser
+        webbrowser.open(f"file://{report_file}")
+
+    if export in ("PDF", "Both"):
+        _export_pdf(console, logs, timestamp)
+
+
+def _export_pdf(console: Console, logs: list, timestamp: str):
+    """Generate a PDF report from log files using fpdf2."""
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    pdf.add_page()
+    pdf.set_font("Courier", "B", 18)
+    pdf.cell(0, 15, "SecTools Scan Report", ln=True, align="C")
+    pdf.set_font("Courier", "", 10)
+    pdf.cell(0, 8, f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align="C")
+    pdf.cell(0, 8, f"{len(logs)} scans", ln=True, align="C")
+    pdf.ln(10)
+
+    for log in logs[:20]:
+        name = log.stem.replace("_", " ").title()
+        mtime = datetime.datetime.fromtimestamp(log.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        content = log.read_text()
+
+        pdf.set_font("Courier", "B", 12)
+        pdf.cell(0, 10, name, ln=True)
+        pdf.set_font("Courier", "", 8)
+        pdf.cell(0, 6, mtime, ln=True)
+        pdf.ln(2)
+        pdf.set_font("Courier", "", 7)
+        for line in content.splitlines():
+            safe = line.encode("latin-1", "replace").decode("latin-1")
+            pdf.cell(0, 4, safe, ln=True)
+        pdf.ln(5)
+
+    pdf_file = LOGS_DIR / f"report_{timestamp}.pdf"
+    pdf.output(str(pdf_file))
+    console.print(f"[bold green]PDF saved: {pdf_file}[/bold green]")

@@ -16,9 +16,15 @@ def run(console: Console):
 
     mode = inquirer.select(
         message="Mode:",
-        choices=list(MODES.keys()),
+        choices=list(MODES.keys()) + ["View cheat sheet"],
         pointer="❯",
     ).execute()
+
+    if mode == "View cheat sheet":
+        from sectools.cheatsheets import show_cheatsheet
+        show_cheatsheet(console, "netcat")
+        return
+
     action = MODES[mode]
 
     # Use ncat on Windows, nc on macOS/Linux
