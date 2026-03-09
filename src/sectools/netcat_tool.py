@@ -1,3 +1,5 @@
+import os
+import shutil
 import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
@@ -19,26 +21,29 @@ def run(console: Console):
     ).execute()
     action = MODES[mode]
 
+    # Use ncat on Windows, nc on macOS/Linux
+    nc = "ncat" if os.name == "nt" or shutil.which("ncat") and not shutil.which("nc") else "nc"
+
     if action == "listen":
         port = inquirer.text(message="Port to listen on:").execute().strip()
         if not port:
             console.print("[red]No port provided.[/red]")
             return
-        cmd = ["nc", "-lvnp", port]
+        cmd = [nc, "-lvnp", port]
     elif action == "connect":
         host = inquirer.text(message="Target host:").execute().strip()
         port = inquirer.text(message="Target port:").execute().strip()
         if not host or not port:
             console.print("[red]Host and port required.[/red]")
             return
-        cmd = ["nc", "-v", host, port]
+        cmd = [nc, "-v", host, port]
     else:
         host = inquirer.text(message="Target host:").execute().strip()
         port_range = inquirer.text(message="Port range (e.g. 1-1000):").execute().strip()
         if not host or not port_range:
             console.print("[red]Host and port range required.[/red]")
             return
-        cmd = ["nc", "-zv", host, port_range]
+        cmd = [nc, "-zv", host, port_range]
 
     console.print(f"[dim]Running: {' '.join(cmd)}[/dim]\n")
     subprocess.run(cmd)

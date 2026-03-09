@@ -12,24 +12,52 @@ A guided command-line security testing toolkit. Wraps popular pentesting tools w
 
 ## Quick Install
 
+### macOS
+
 ```bash
 git clone https://github.com/uct423-coder/SECTOOLS.git
 cd SECTOOLS
 chmod +x install.sh
 ./install.sh
+start
 ```
 
-That's it. The installer will:
-- Install Homebrew (if missing)
-- Install all security tools (Nmap, Nikto, Hydra, Gobuster, John the Ripper, Hashcat, Netcat, SQLMap, Metasploit)
-- Set up Python virtual environment
-- Install SecTools
-- Make the `start` command available globally
+### Windows
+
+> Run Command Prompt or PowerShell **as Administrator**
+
+```cmd
+git clone https://github.com/uct423-coder/SECTOOLS.git
+cd SECTOOLS
+install.bat
+sectools.bat
+```
+
+### Linux (Debian/Ubuntu)
+
+```bash
+git clone https://github.com/uct423-coder/SECTOOLS.git
+cd SECTOOLS
+sudo apt update && sudo apt install -y nmap nikto hydra gobuster john hashcat netcat-openbsd sqlmap
+python3 -m venv .venv
+.venv/bin/pip install -e .
+.venv/bin/start
+```
+
+## What the installer does
+
+| Step | macOS | Windows |
+|------|-------|---------|
+| Package manager | Homebrew | Chocolatey |
+| Security tools | `brew install nmap nikto hydra ...` | `choco install nmap sqlmap ...` |
+| Python venv | Auto-created | Auto-created |
+| Global command | `start` | `sectools.bat` |
 
 ## Usage
 
 ```bash
-start
+start          # macOS / Linux
+sectools.bat   # Windows
 ```
 
 ## Tools Included
@@ -69,11 +97,12 @@ start
 - **HTML reports** — generate a report from your scan history and view it in browser
 - **Tool status** — see which tools are installed at a glance
 - **Recon autopilot** — run multiple scans on a target with one command
+- **Cross-platform** — works on macOS, Windows, and Linux
 
 ## Requirements
 
-- macOS (Homebrew)
 - Python 3.9+
+- macOS (Homebrew), Windows (Chocolatey), or Linux (apt)
 
 ## Disclaimer
 
