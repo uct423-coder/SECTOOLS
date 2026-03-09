@@ -1,0 +1,40 @@
+import subprocess
+from InquirerPy import inquirer
+from rich.console import Console
+from sectools.utils import run_logged
+
+PRESETS = {
+    "Crack with default wordlist": [],
+    "Crack with custom wordlist": "wordlist",
+    "Show cracked passwords (--show)": ["--show"],
+    "Incremental mode (brute force)": ["--incremental"],
+    "Custom flags": None,
+}
+
+
+def run(console: Console):
+    console.rule("[bold cyan]John the Ripper — Password Cracker[/bold cyan]")
+
+    hashfile = inquirer.text(message="Hash file path:").execute().strip()
+    if not hashfile:
+        console.print("[red]No hash file provided.[/red]")
+        return
+
+    preset = inquirer.select(
+        message="Mode:",
+        choices=list(PRESETS.keys()),
+        pointer="❯",
+    ).execute()
+
+    val = PRESETS[preset]
+    if val is None:
+        flags_str = inquirer.text(message="Enter john flags:").execute()
+        flags = flags_str.split()
+    elif val == "wordlist":
+        wordlist = inquirer.text(message="Wordlist path:").execute().strip()
+        flags = [f"--wordlist={wordlist}"]
+    else:
+        flags = val
+
+    cmd = ["john"] + flags + [hashfile]
+    run_logged(cmd, console, "john")
