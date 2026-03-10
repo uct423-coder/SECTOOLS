@@ -1,12 +1,9 @@
 import os
 import sys
 import datetime
-import glob
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
-from rich.table import Table
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
 
@@ -35,98 +32,115 @@ from sectools import osint, screenshot, cred_manager, scope, sessions
 
 console = Console()
 
-# All available tool menu items (label -> handler)
-ALL_TOOL_ITEMS = [
-    # Recon
-    ("Recon", "Recon Autopilot — Auto-scan a target", recon_tool.run),
-    ("Recon", "Nmap — Network Scanner", nmap_tool.run),
-    ("Recon", "Nikto — Web Server Scanner", nikto_tool.run),
-    ("Recon", "Gobuster — Directory & DNS Brute Force", gobuster_tool.run),
-    ("Recon", "OSINT — Subdomain & Recon", osint.run),
-    # Exploitation
-    ("Exploitation", "Metasploit — Exploitation Framework", msf_tool.run),
-    ("Exploitation", "SQLMap — SQL Injection Tester", sqlmap_tool.run),
-    ("Exploitation", "Hydra — Brute Force", hydra_tool.run),
-    # Password Cracking
-    ("Password Cracking", "John the Ripper — Password Cracker", john_tool.run),
-    ("Password Cracking", "Hashcat — GPU Password Cracker", hashcat_tool.run),
-    # Networking
-    ("Networking", "Netcat — Network Swiss Army Knife", netcat_tool.run),
-    ("Networking", "HTTP Probe — Quick URL Scanner", http_probe.run),
-    ("Networking", "Port Reference — Common Ports Lookup", port_ref.run),
-    ("Networking", "Subnet Calculator — IP/CIDR Math", subnet_calc.run),
-    ("Networking", "Screenshot — Capture Web Pages", screenshot.run),
-    # Generators
-    ("Generators", "Reverse Shell Generator", revshell.run),
-    ("Generators", "Password Generator", passgen.run),
-    ("Generators", "Encoding / Decoding", encoding.run),
-    # Analysis
-    ("Analysis", "Hash Identifier", hash_id.run),
-    ("Analysis", "Scan History Browser", scan_history.run),
-    ("Analysis", "Diff Scans", lambda c: diff_scans(c)),
-]
+# ── Category sub-menus ──────────────────────────────────────────────
 
-# Labels that are handled specially (not simple handler calls)
-SPECIAL_LABELS = {
-    "View Saved Targets", "Edit Target Notes", "Target Groups",
-    "Scan Profiles", "Wordlist Manager", "Schedule a Scan",
-    "View Scheduled Scans", "Scope Manager", "Credential Manager",
-    "Sessions", "Tool Status — Check installed tools",
-    "Install Missing Tools", "Generate Report", "Cheat Sheets",
-    "Settings", "Plugins", "Manage Favorites", "Clear Screen", "Exit",
+CATEGORIES = {
+    "Recon & OSINT": [
+        ("Recon Autopilot", recon_tool.run),
+        ("Nmap — Network Scanner", nmap_tool.run),
+        ("Nikto — Web Server Scanner", nikto_tool.run),
+        ("Gobuster — Dir & DNS Brute Force", gobuster_tool.run),
+        ("OSINT — Subdomain & Recon", osint.run),
+    ],
+    "Exploitation": [
+        ("Metasploit — Framework", msf_tool.run),
+        ("SQLMap — SQL Injection", sqlmap_tool.run),
+        ("Hydra — Brute Force", hydra_tool.run),
+    ],
+    "Password Cracking": [
+        ("John the Ripper", john_tool.run),
+        ("Hashcat — GPU Cracker", hashcat_tool.run),
+    ],
+    "Networking & Web": [
+        ("Netcat — Network Swiss Army Knife", netcat_tool.run),
+        ("HTTP Probe — Quick URL Scanner", http_probe.run),
+        ("Screenshot — Capture Web Pages", screenshot.run),
+        ("Port Reference", port_ref.run),
+        ("Subnet Calculator", subnet_calc.run),
+    ],
+    "Generators": [
+        ("Reverse Shell Generator", revshell.run),
+        ("Password Generator", passgen.run),
+        ("Encoding / Decoding", encoding.run),
+    ],
+    "Analysis": [
+        ("Hash Identifier", hash_id.run),
+        ("Scan History Browser", scan_history.run),
+        ("Diff Scans", lambda c: diff_scans(c)),
+    ],
 }
 
-HANDLERS = {item[1]: item[2] for item in ALL_TOOL_ITEMS}
+# Flat lookup for favorites
+ALL_TOOL_ITEMS = []
+HANDLERS = {}
+for _cat, _tools in CATEGORIES.items():
+    for _label, _handler in _tools:
+        ALL_TOOL_ITEMS.append((_cat, _label, _handler))
+        HANDLERS[_label] = _handler
+
+
+def _run_category(console: Console, category: str):
+    """Show a sub-menu for a tool category."""
+    tools = CATEGORIES[category]
+    choices = [t[0] for t in tools] + ["Back"]
+
+    while True:
+        choice = inquirer.select(
+            message=f"{category}:",
+            choices=choices,
+            pointer="❯",
+        ).execute()
+
+        if choice == "Back":
+            return
+
+        handler = dict(tools)[choice]
+        try:
+            handler(console)
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Interrupted.[/yellow]")
+        except FileNotFoundError as e:
+            tool_name = e.filename or "unknown"
+            console.print(f"\n[red]{tool_name} is not installed.[/red]")
+            console.print(f"[yellow]Install it with: brew install {tool_name}[/yellow]")
+        console.print()
 
 
 def _build_menu_choices() -> list:
-    """Build menu choices dynamically, prepending favorites if any."""
+    """Build the compact main menu."""
     config = load_config()
     favorites = config.get("favorites", [])
-    theme = config.get("theme_color", "cyan")
 
     choices = []
 
-    # Favorites section
+    # Favorites at the top
     if favorites:
         choices.append(Separator("── Favorites ──"))
         for fav in favorites:
             choices.append(fav)
 
-    # Sections
-    sections = [
-        ("Recon", []),
-        ("Exploitation", []),
-        ("Password Cracking", []),
-        ("Networking", []),
-        ("Generators", []),
-        ("Analysis", []),
-    ]
-    section_map = {s[0]: s[1] for s in sections}
-    for cat, label, _ in ALL_TOOL_ITEMS:
-        section_map[cat].append(label)
+    # Tool categories
+    choices.append(Separator("── Tools ──"))
+    for cat in CATEGORIES:
+        count = len(CATEGORIES[cat])
+        choices.append(f"{cat}  ({count})")
 
-    for section_name, items in sections:
-        choices.append(Separator(f"── {section_name} ──"))
-        choices.extend(items)
-
+    # Management
     choices.append(Separator("── Management ──"))
     choices.extend([
-        "View Saved Targets",
-        "Edit Target Notes",
-        "Target Groups",
+        "Targets & Groups",
         "Scan Profiles",
         "Wordlist Manager",
-        "Schedule a Scan",
-        "View Scheduled Scans",
+        "Scheduler",
         "Scope Manager",
         "Credential Manager",
         "Sessions",
     ])
 
+    # Other
     choices.append(Separator("── Other ──"))
     choices.extend([
-        "Tool Status — Check installed tools",
+        "Tool Status",
         "Install Missing Tools",
         "Generate Report",
         "Cheat Sheets",
@@ -160,63 +174,94 @@ def _auto_cleanup(console: Console):
         console.print(f"[dim]Auto-cleanup: deleted {deleted} log(s) older than {retention_days} days.[/dim]")
 
 
+def _targets_submenu(console: Console):
+    """Targets & Groups sub-menu."""
+    config = load_config()
+    theme = config.get("theme_color", "cyan")
+
+    while True:
+        choice = inquirer.select(
+            message="Targets & Groups:",
+            choices=[
+                "View Saved Targets",
+                "Edit Target Notes",
+                "Target Groups",
+                "Back",
+            ],
+            pointer="❯",
+        ).execute()
+
+        if choice == "Back":
+            return
+        elif choice == "View Saved Targets":
+            entries = load_targets_with_notes()
+            if not entries:
+                console.print("[yellow]No saved targets yet.[/yellow]")
+            else:
+                console.rule(f"[bold {theme}]Saved Targets[/bold {theme}]")
+                for i, e in enumerate(entries, 1):
+                    note = f" [dim]— {e['notes']}[/dim]" if e.get("notes") else ""
+                    group = f" [magenta][{e.get('group', '')}][/magenta]" if e.get("group") else ""
+                    console.print(f"  [{theme}]{i}.[/{theme}] {e['target']}{group}{note}")
+                console.print(f"\n[dim]Stored in {TARGETS_FILE}[/dim]")
+        elif choice == "Edit Target Notes":
+            edit_target_notes(console)
+        elif choice == "Target Groups":
+            target_groups.run(console)
+        console.print()
+
+
+def _scheduler_submenu(console: Console):
+    """Scheduler sub-menu."""
+    while True:
+        choice = inquirer.select(
+            message="Scheduler:",
+            choices=["Schedule a Scan", "View Scheduled Scans", "Back"],
+            pointer="❯",
+        ).execute()
+        if choice == "Back":
+            return
+        elif choice == "Schedule a Scan":
+            schedule_scan(console)
+        elif choice == "View Scheduled Scans":
+            view_scheduled(console)
+        console.print()
+
+
 def _manage_favorites(console: Console):
     """Toggle tools as favorites."""
     config = load_config()
     favorites = config.get("favorites", [])
-
-    # All tool labels
     all_labels = [item[1] for item in ALL_TOOL_ITEMS]
 
-    choices = []
-    for label in all_labels:
-        star = "★ " if label in favorites else "  "
-        choices.append(f"{star}{label}")
-    choices.append("Done")
+    def _build_choices():
+        c = []
+        for label in all_labels:
+            star = "★ " if label in favorites else "  "
+            c.append(f"{star}{label}")
+        c.append("Done")
+        return c
 
     while True:
         choice = inquirer.select(
             message="Toggle favorites (★ = favorited):",
-            choices=choices,
+            choices=_build_choices(),
             pointer="❯",
         ).execute()
 
         if choice == "Done":
             break
 
-        # Toggle
         label = choice.lstrip("★ ").strip()
         if label in favorites:
             favorites.remove(label)
-            console.print(f"[yellow]Removed {label} from favorites.[/yellow]")
+            console.print(f"[yellow]Removed from favorites.[/yellow]")
         else:
             favorites.append(label)
-            console.print(f"[green]Added {label} to favorites.[/green]")
-
-        # Rebuild choices
-        choices = []
-        for l in all_labels:
-            star = "★ " if l in favorites else "  "
-            choices.append(f"{star}{l}")
-        choices.append("Done")
+            console.print(f"[green]Added to favorites.[/green]")
 
     config["favorites"] = favorites
     save_config(config)
-
-
-def view_targets(console: Console):
-    config = load_config()
-    theme = config.get("theme_color", "cyan")
-    entries = load_targets_with_notes()
-    if not entries:
-        console.print("[yellow]No saved targets yet.[/yellow]")
-        return
-    console.rule(f"[bold {theme}]Saved Targets[/bold {theme}]")
-    for i, e in enumerate(entries, 1):
-        note = f" [dim]— {e['notes']}[/dim]" if e.get("notes") else ""
-        group = f" [magenta][{e.get('group', '')}][/magenta]" if e.get("group") else ""
-        console.print(f"  [{theme}]{i}.[/{theme}] {e['target']}{group}{note}")
-    console.print(f"\n[dim]Stored in {TARGETS_FILE}[/dim]")
 
 
 def main():
@@ -228,7 +273,7 @@ def main():
         menu_choices = _build_menu_choices()
         try:
             choice = inquirer.select(
-                message="Select a tool:",
+                message="Select:",
                 choices=menu_choices,
                 pointer="❯",
             ).execute()
@@ -238,53 +283,57 @@ def main():
         if choice == "Exit":
             console.print("[bold green]Goodbye![/bold green]")
             break
-        elif choice == "Tool Status — Check installed tools":
-            show_tool_status(console)
-        elif choice == "View Saved Targets":
-            view_targets(console)
-        elif choice == "Edit Target Notes":
-            edit_target_notes(console)
-        elif choice == "Generate Report":
-            generate_report(console)
-        elif choice == "Target Groups":
-            target_groups.run(console)
-        elif choice == "Scan Profiles":
-            scan_profiles.run(console)
-        elif choice == "Wordlist Manager":
-            wordlist_mgr.run(console)
-        elif choice == "Schedule a Scan":
-            schedule_scan(console)
-        elif choice == "View Scheduled Scans":
-            view_scheduled(console)
-        elif choice == "Scope Manager":
-            scope.run(console)
-        elif choice == "Credential Manager":
-            cred_manager.run(console)
-        elif choice == "Sessions":
-            sessions.run(console)
-        elif choice == "Install Missing Tools":
-            auto_installer.run(console)
-        elif choice == "Cheat Sheets":
-            cheatsheet_menu(console)
-        elif choice == "Settings":
-            config_menu(console)
-        elif choice == "Plugins":
-            plugins_menu(console)
-        elif choice == "Manage Favorites":
-            _manage_favorites(console)
         elif choice == "Clear Screen":
             os.system("clear" if os.name != "nt" else "cls")
             show_dashboard(console)
             continue
-        elif choice in HANDLERS:
-            try:
-                HANDLERS[choice](console)
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Interrupted. Returning to menu.[/yellow]")
-            except FileNotFoundError as e:
-                tool_name = e.filename or "unknown"
-                console.print(f"\n[red]{tool_name} is not installed.[/red]")
-                console.print(f"[yellow]Install it with: brew install {tool_name}[/yellow]")
+
+        # Tool categories
+        for cat in CATEGORIES:
+            if choice.startswith(cat):
+                _run_category(console, cat)
+                break
+        else:
+            # Favorites (direct tool launch)
+            if choice in HANDLERS:
+                try:
+                    HANDLERS[choice](console)
+                except KeyboardInterrupt:
+                    console.print("\n[yellow]Interrupted.[/yellow]")
+                except FileNotFoundError as e:
+                    tool_name = e.filename or "unknown"
+                    console.print(f"\n[red]{tool_name} is not installed.[/red]")
+                    console.print(f"[yellow]Install it with: brew install {tool_name}[/yellow]")
+            # Management
+            elif choice == "Targets & Groups":
+                _targets_submenu(console)
+            elif choice == "Scan Profiles":
+                scan_profiles.run(console)
+            elif choice == "Wordlist Manager":
+                wordlist_mgr.run(console)
+            elif choice == "Scheduler":
+                _scheduler_submenu(console)
+            elif choice == "Scope Manager":
+                scope.run(console)
+            elif choice == "Credential Manager":
+                cred_manager.run(console)
+            elif choice == "Sessions":
+                sessions.run(console)
+            # Other
+            elif choice == "Tool Status":
+                show_tool_status(console)
+            elif choice == "Install Missing Tools":
+                auto_installer.run(console)
+            elif choice == "Generate Report":
+                generate_report(console)
+            elif choice == "Cheat Sheets":
+                cheatsheet_menu(console)
+            elif choice == "Settings":
+                config_menu(console)
+            elif choice == "Plugins":
+                plugins_menu(console)
+            elif choice == "Manage Favorites":
+                _manage_favorites(console)
 
         console.print()
 
