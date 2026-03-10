@@ -111,12 +111,51 @@ echo ""
 echo -e "${BOLD}[6/7] Setting up wordlists...${RESET}"
 WORDLISTS_DIR="$HOME/.sectools-wordlists"
 mkdir -p "$WORDLISTS_DIR"
+
+# Copy bundled wordlists
 if [ -d "$SCRIPT_DIR/wordlists" ]; then
     cp -n "$SCRIPT_DIR/wordlists/"* "$WORDLISTS_DIR/" 2>/dev/null || true
-    echo -e "  ${GREEN}[✓]${RESET} Wordlists copied to $WORDLISTS_DIR"
-else
-    echo -e "  ${YELLOW}[!]${RESET} No wordlists directory found in repo"
+    echo -e "  ${GREEN}[✓]${RESET} Bundled wordlists copied"
 fi
+
+# Download rockyou.txt (compressed ~15MB → ~140MB extracted)
+if [ ! -f "$WORDLISTS_DIR/rockyou.txt" ]; then
+    echo -e "  ${CYAN}[*]${RESET} Downloading rockyou.txt..."
+    if curl -fsSL "https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt" \
+        -o "$WORDLISTS_DIR/rockyou.txt" 2>/dev/null; then
+        echo -e "  ${GREEN}[✓]${RESET} rockyou.txt downloaded ($( du -h "$WORDLISTS_DIR/rockyou.txt" | cut -f1 ))"
+    else
+        echo -e "  ${YELLOW}[!]${RESET} Failed to download rockyou.txt — you can grab it later from Wordlist Manager"
+    fi
+else
+    echo -e "  ${GREEN}[✓]${RESET} rockyou.txt already exists"
+fi
+
+# Download SecLists essentials
+SECLISTS_BASE="https://raw.githubusercontent.com/danielmiessler/SecLists/master"
+declare -A SECLISTS_DOWNLOADS=(
+    ["subdomains-top1million-5000.txt"]="Discovery/DNS/subdomains-top1million-5000.txt"
+    ["directory-list-2.3-small.txt"]="Discovery/Web-Content/directory-list-2.3-small.txt"
+    ["top-usernames-shortlist.txt"]="Usernames/top-usernames-shortlist.txt"
+    ["default-passwords.txt"]="Passwords/Default-Credentials/default-passwords.txt"
+    ["common-web-passwords.txt"]="Passwords/Common-Credentials/10k-most-common.txt"
+)
+
+for filename in "${!SECLISTS_DOWNLOADS[@]}"; do
+    if [ ! -f "$WORDLISTS_DIR/$filename" ]; then
+        echo -e "  ${CYAN}[*]${RESET} Downloading $filename..."
+        if curl -fsSL "$SECLISTS_BASE/${SECLISTS_DOWNLOADS[$filename]}" \
+            -o "$WORDLISTS_DIR/$filename" 2>/dev/null; then
+            echo -e "  ${GREEN}[✓]${RESET} $filename"
+        else
+            echo -e "  ${YELLOW}[!]${RESET} Failed: $filename"
+        fi
+    else
+        echo -e "  ${GREEN}[✓]${RESET} $filename already exists"
+    fi
+done
+
+echo -e "  ${DIM}Wordlists directory: $WORDLISTS_DIR${RESET}"
 echo ""
 
 # ── Step 7: Global command ──

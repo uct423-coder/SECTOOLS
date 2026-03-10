@@ -13,9 +13,13 @@ WORDLIST_DIR = Path.home() / "sectools-wordlists"
 PROJECT_WORDLIST_DIR = Path(__file__).resolve().parent.parent.parent / "wordlists"
 
 PRESET_WORDLISTS = {
+    "rockyou.txt (passwords — 14M entries)": "https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt",
     "common.txt (dirb)": "https://raw.githubusercontent.com/v0re/dirb/master/wordlists/common.txt",
     "directory-list-2.3-small.txt": "https://raw.githubusercontent.com/daviddias/node-dirbuster/master/lists/directory-list-2.3-small.txt",
     "subdomains-top1million-5000.txt": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/subdomains-top1million-5000.txt",
+    "top-usernames-shortlist.txt": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Usernames/top-usernames-shortlist.txt",
+    "default-passwords.txt": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Default-Credentials/default-passwords.txt",
+    "common-web-passwords.txt (10k)": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10k-most-common.txt",
     "Custom URL...": None,
 }
 
