@@ -32,7 +32,7 @@ echo ""
 sleep 1
 
 # ── Step 1: Homebrew ──
-echo -e "${BOLD}[1/6] Checking package manager...${RESET}"
+echo -e "${BOLD}[1/8] Checking package manager...${RESET}"
 if ! command -v brew &> /dev/null; then
     echo -e "  ${YELLOW}[!] Homebrew not found. Installing...${RESET}"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -42,7 +42,7 @@ fi
 echo ""
 
 # ── Step 2: Security tools ──
-echo -e "${BOLD}[2/6] Installing security tools...${RESET}"
+echo -e "${BOLD}[2/8] Installing security tools...${RESET}"
 TOOLS="nmap nikto hydra gobuster john hashcat netcat sqlmap"
 INSTALLED=0
 TOTAL=0
@@ -80,7 +80,7 @@ echo -e "  ${DIM}$INSTALLED/$TOTAL tools ready${RESET}"
 echo ""
 
 # ── Step 3: Python ──
-echo -e "${BOLD}[3/6] Checking Python...${RESET}"
+echo -e "${BOLD}[3/8] Checking Python...${RESET}"
 if ! command -v python3 &> /dev/null; then
     echo -e "  ${CYAN}[*]${RESET} Installing Python 3..."
     brew install python3
@@ -92,7 +92,7 @@ echo ""
 
 # ── Step 4: Virtual environment ──
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-echo -e "${BOLD}[4/6] Setting up environment...${RESET}"
+echo -e "${BOLD}[4/8] Setting up environment...${RESET}"
 if [ ! -d "$SCRIPT_DIR/.venv" ]; then
     python3 -m venv "$SCRIPT_DIR/.venv"
     echo -e "  ${GREEN}[✓]${RESET} Virtual environment created"
@@ -102,13 +102,46 @@ fi
 echo ""
 
 # ── Step 5: Install package ──
-echo -e "${BOLD}[5/6] Installing SecTools package...${RESET}"
+echo -e "${BOLD}[5/8] Installing SecTools package...${RESET}"
 "$SCRIPT_DIR/.venv/bin/pip" install -e "$SCRIPT_DIR" --quiet
 echo -e "  ${GREEN}[✓]${RESET} SecTools installed"
 echo ""
 
-# ── Step 6: Global command ──
-echo -e "${BOLD}[6/6] Setting up global command...${RESET}"
+# ── Step 6: Wordlists ──
+echo -e "${BOLD}[6/8] Setting up wordlists...${RESET}"
+WORDLISTS_DIR="$HOME/.sectools-wordlists"
+mkdir -p "$WORDLISTS_DIR"
+if [ -d "$SCRIPT_DIR/wordlists" ]; then
+    cp -n "$SCRIPT_DIR/wordlists/"* "$WORDLISTS_DIR/" 2>/dev/null || true
+    echo -e "  ${GREEN}[✓]${RESET} Wordlists copied to $WORDLISTS_DIR"
+else
+    echo -e "  ${YELLOW}[!]${RESET} No wordlists directory found in repo"
+fi
+echo ""
+
+# ── Step 7: Default config ──
+echo -e "${BOLD}[7/8] Setting up default config...${RESET}"
+CONFIG_FILE="$HOME/.sectools-config.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    cat > "$CONFIG_FILE" <<CONF
+{
+  "default_wordlist": "/usr/share/wordlists/rockyou.txt",
+  "default_dirwordlist": "$WORDLISTS_DIR/common.txt",
+  "notifications_enabled": true,
+  "theme_color": "cyan",
+  "log_retention_days": 30,
+  "auto_save_targets": false,
+  "favorites": []
+}
+CONF
+    echo -e "  ${GREEN}[✓]${RESET} Config created with wordlist paths"
+else
+    echo -e "  ${GREEN}[✓]${RESET} Config already exists"
+fi
+echo ""
+
+# ── Step 8: Global command ──
+echo -e "${BOLD}[8/8] Setting up global command...${RESET}"
 if [ -d /opt/homebrew/bin ]; then
     ln -sf "$SCRIPT_DIR/.venv/bin/sectool" /opt/homebrew/bin/sectool
     echo -e "  ${GREEN}[✓]${RESET} 'sectool' command linked"

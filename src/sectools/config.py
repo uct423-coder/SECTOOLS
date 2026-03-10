@@ -9,7 +9,7 @@ CONFIG_PATH = Path.home() / ".sectools-config.json"
 
 DEFAULT_CONFIG = {
     "default_wordlist": "rockyou.txt" if os.name == "nt" else "/usr/share/wordlists/rockyou.txt",
-    "default_dirwordlist": "common.txt" if os.name == "nt" else "/usr/share/wordlists/dirb/common.txt",
+    "default_dirwordlist": str(Path.home() / ".sectools-wordlists" / "common.txt"),
     "notifications_enabled": True,
     "theme_color": "cyan",
     "log_retention_days": 30,
