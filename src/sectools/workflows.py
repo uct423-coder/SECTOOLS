@@ -10,7 +10,7 @@ from rich.panel import Panel
 from InquirerPy import inquirer
 
 from sectools.utils import (
-    extract_hostname, run_logged, save_target, LOGS_DIR,
+    extract_hostname, run_logged, save_target, LOGS_DIR, pick_wordlist,
 )
 from sectools.config import load_config, save_config
 
@@ -116,10 +116,7 @@ def _run_workflow(console: Console, name: str, workflow: dict):
     wordlist = config.get("default_dirwordlist", "common.txt")
     needs_wl = any(s.get("needs_wordlist") for s in steps)
     if needs_wl:
-        wordlist = inquirer.text(
-            message="Wordlist path:",
-            default=wordlist,
-        ).execute().strip()
+        wordlist = pick_wordlist("Wordlist:", wordlist)
 
     # Confirm
     console.print()

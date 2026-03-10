@@ -1,7 +1,7 @@
 import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged
+from sectools.utils import run_logged, pick_wordlist, WORDLISTS_DIR
 
 HASH_TYPES = {
     "MD5 (0)": "0",
@@ -54,14 +54,14 @@ def run(console: Console):
     cmd = ["hashcat", "-m", hash_type]
 
     if attack_mode == "0r":
-        wordlist = inquirer.text(message="Wordlist path:").execute().strip()
+        wordlist = pick_wordlist("Wordlist:", str(WORDLISTS_DIR / "rockyou.txt"))
         rules = inquirer.text(message="Rules file:", default="/opt/homebrew/share/hashcat/rules/best64.rule").execute().strip()
         cmd += ["-a", "0", "-r", rules, hashfile, wordlist]
     elif attack_mode == "3":
         mask = inquirer.text(message="Mask (e.g. ?a?a?a?a?a?a):", default="?a?a?a?a?a?a").execute().strip()
         cmd += ["-a", "3", hashfile, mask]
     else:
-        wordlist = inquirer.text(message="Wordlist path:").execute().strip()
+        wordlist = pick_wordlist("Wordlist:", str(WORDLISTS_DIR / "rockyou.txt"))
         cmd += ["-a", attack_mode, hashfile, wordlist]
 
     run_logged(cmd, console, "hashcat")

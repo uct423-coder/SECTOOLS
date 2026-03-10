@@ -1,7 +1,7 @@
 import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged
+from sectools.utils import run_logged, pick_wordlist, WORDLISTS_DIR
 
 PRESETS = {
     "Crack with default wordlist": [],
@@ -36,7 +36,7 @@ def run(console: Console):
         flags_str = inquirer.text(message="Enter john flags:").execute()
         flags = flags_str.split()
     elif val == "wordlist":
-        wordlist = inquirer.text(message="Wordlist path:").execute().strip()
+        wordlist = pick_wordlist("Wordlist:", str(WORDLISTS_DIR / "rockyou.txt"))
         flags = [f"--wordlist={wordlist}"]
     else:
         flags = val

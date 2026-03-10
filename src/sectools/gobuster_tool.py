@@ -1,7 +1,7 @@
 import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged
+from sectools.utils import run_logged, pick_wordlist
 
 MODES = {
     "Directory brute-force (dir)": "dir",
@@ -33,10 +33,7 @@ def run(console: Console):
         if not url:
             console.print("[red]No URL provided.[/red]")
             return
-        wordlist = inquirer.text(
-            message="Wordlist path:",
-            default=load_config().get("default_dirwordlist", "common.txt"),
-        ).execute().strip()
+        wordlist = pick_wordlist("Wordlist:", load_config().get("default_dirwordlist", "common.txt"))
         extensions = inquirer.text(message="File extensions (e.g. php,html,txt) or leave empty:").execute().strip()
         cmd = ["gobuster", "dir", "-u", url, "-w", wordlist]
         if extensions:
@@ -46,20 +43,14 @@ def run(console: Console):
         if not domain:
             console.print("[red]No domain provided.[/red]")
             return
-        wordlist = inquirer.text(
-            message="Wordlist path:",
-            default=load_config().get("default_dirwordlist", "common.txt"),
-        ).execute().strip()
+        wordlist = pick_wordlist("Wordlist:", load_config().get("default_dirwordlist", "common.txt"))
         cmd = ["gobuster", "dns", "-d", domain, "-w", wordlist]
     else:
         url = inquirer.text(message="Target URL:").execute().strip()
         if not url:
             console.print("[red]No URL provided.[/red]")
             return
-        wordlist = inquirer.text(
-            message="Wordlist path:",
-            default=load_config().get("default_dirwordlist", "common.txt"),
-        ).execute().strip()
+        wordlist = pick_wordlist("Wordlist:", load_config().get("default_dirwordlist", "common.txt"))
         cmd = ["gobuster", "vhost", "-u", url, "-w", wordlist]
 
     threads = inquirer.text(message="Threads (default 10):", default="10").execute().strip()

@@ -1,36 +1,13 @@
 import subprocess
-from pathlib import Path
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import extract_hostname, run_logged, ask_target
+from sectools.utils import extract_hostname, run_logged, ask_target, pick_wordlist, WORDLISTS_DIR
 
 SERVICES = ["ssh", "ftp", "http-post-form", "smtp", "mysql", "rdp", "vnc", "telnet"]
-
-WORDLISTS_DIR = Path.home() / ".sectools-wordlists"
 
 # Default wordlist paths (downloaded by install.sh)
 DEFAULT_PASSWORDS = str(WORDLISTS_DIR / "rockyou.txt")
 DEFAULT_USERNAMES = str(WORDLISTS_DIR / "top-usernames-shortlist.txt")
-
-
-def _pick_wordlist(message: str, default: str) -> str:
-    """Let user pick a wordlist from downloaded ones or enter a custom path."""
-    available = sorted(WORDLISTS_DIR.glob("*.txt")) if WORDLISTS_DIR.exists() else []
-
-    if available:
-        choices = [f.name for f in available] + ["Custom path..."]
-        choice = inquirer.select(
-            message=message,
-            choices=choices,
-            default=Path(default).name if Path(default).name in [f.name for f in available] else None,
-            pointer="❯",
-        ).execute()
-
-        if choice == "Custom path...":
-            return inquirer.text(message="Path:", default=default).execute().strip()
-        return str(WORDLISTS_DIR / choice)
-
-    return inquirer.text(message=message, default=default).execute().strip()
 
 
 def run(console: Console):
@@ -66,11 +43,11 @@ def run(console: Console):
         cmd = ["hydra"] + flags_str.split() + [hostname, service]
     elif mode == "Single user + password list":
         user = inquirer.text(message="Username:").execute().strip()
-        wordlist = _pick_wordlist("Password wordlist:", DEFAULT_PASSWORDS)
+        wordlist = pick_wordlist("Password wordlist:", DEFAULT_PASSWORDS)
         cmd = ["hydra", "-l", user, "-P", wordlist, hostname, service]
     else:
-        userlist = _pick_wordlist("Username list:", DEFAULT_USERNAMES)
-        wordlist = _pick_wordlist("Password wordlist:", DEFAULT_PASSWORDS)
+        userlist = pick_wordlist("Username list:", DEFAULT_USERNAMES)
+        wordlist = pick_wordlist("Password wordlist:", DEFAULT_PASSWORDS)
         cmd = ["hydra", "-L", userlist, "-P", wordlist, hostname, service]
 
     run_logged(cmd, console, "hydra")

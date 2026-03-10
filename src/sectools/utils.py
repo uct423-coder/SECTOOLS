@@ -9,6 +9,29 @@ from rich.table import Table
 
 LOGS_DIR = Path.home() / "sectools-logs"
 TARGETS_FILE = Path.home() / ".sectools-targets"
+WORDLISTS_DIR = Path.home() / ".sectools-wordlists"
+
+
+def pick_wordlist(message: str, default: str) -> str:
+    """Let user pick a wordlist from downloaded ones or enter a custom path."""
+    from InquirerPy import inquirer
+
+    available = sorted(WORDLISTS_DIR.glob("*.txt")) if WORDLISTS_DIR.exists() else []
+
+    if available:
+        choices = [f.name for f in available] + ["Custom path..."]
+        choice = inquirer.select(
+            message=message,
+            choices=choices,
+            default=Path(default).name if Path(default).name in [f.name for f in available] else None,
+            pointer="❯",
+        ).execute()
+
+        if choice == "Custom path...":
+            return inquirer.text(message="Path:", default=default).execute().strip()
+        return str(WORDLISTS_DIR / choice)
+
+    return inquirer.text(message=message, default=default).execute().strip()
 
 # Tool name -> binary name mapping
 TOOL_BINARIES = {
