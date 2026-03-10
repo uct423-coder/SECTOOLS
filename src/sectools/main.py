@@ -161,33 +161,42 @@ def _auto_cleanup(console: Console):
 
 
 def _management_submenu(console: Console):
-    """Management sub-menu — targets, profiles, scope, sessions, etc."""
-    config = load_config()
-    theme = config.get("theme_color", "cyan")
-
+    """Management sub-menu — compact categories."""
     while True:
         choice = inquirer.select(
             message="Management:",
             choices=[
-                "View Saved Targets",
-                "Edit Target Notes",
-                "Target Groups",
-                "Scan Profiles",
-                "Wordlist Manager",
-                "Schedule a Scan",
-                "View Scheduled Scans",
-                "Scope Manager",
-                "Credential Manager",
-                "Sessions",
-                Separator("──────────"),
-                "Tool Status",
-                "Install Missing Tools",
-                "Plugins",
+                "Targets & Groups",
+                "Scans & Profiles",
+                "Security",
+                "System",
                 "Back",
             ],
             pointer="❯",
         ).execute()
 
+        if choice == "Back":
+            return
+        elif choice == "Targets & Groups":
+            _targets_submenu(console)
+        elif choice == "Scans & Profiles":
+            _scans_submenu(console)
+        elif choice == "Security":
+            _security_submenu(console)
+        elif choice == "System":
+            _system_submenu(console)
+        console.print()
+
+
+def _targets_submenu(console: Console):
+    config = load_config()
+    theme = config.get("theme_color", "cyan")
+    while True:
+        choice = inquirer.select(
+            message="Targets & Groups:",
+            choices=["View Saved Targets", "Edit Target Notes", "Target Groups", "Back"],
+            pointer="❯",
+        ).execute()
         if choice == "Back":
             return
         elif choice == "View Saved Targets":
@@ -205,6 +214,18 @@ def _management_submenu(console: Console):
             edit_target_notes(console)
         elif choice == "Target Groups":
             target_groups.run(console)
+        console.print()
+
+
+def _scans_submenu(console: Console):
+    while True:
+        choice = inquirer.select(
+            message="Scans & Profiles:",
+            choices=["Scan Profiles", "Wordlist Manager", "Schedule a Scan", "View Scheduled Scans", "Back"],
+            pointer="❯",
+        ).execute()
+        if choice == "Back":
+            return
         elif choice == "Scan Profiles":
             scan_profiles.run(console)
         elif choice == "Wordlist Manager":
@@ -213,12 +234,36 @@ def _management_submenu(console: Console):
             schedule_scan(console)
         elif choice == "View Scheduled Scans":
             view_scheduled(console)
+        console.print()
+
+
+def _security_submenu(console: Console):
+    while True:
+        choice = inquirer.select(
+            message="Security:",
+            choices=["Scope Manager", "Credential Manager", "Sessions", "Back"],
+            pointer="❯",
+        ).execute()
+        if choice == "Back":
+            return
         elif choice == "Scope Manager":
             scope.run(console)
         elif choice == "Credential Manager":
             cred_manager.run(console)
         elif choice == "Sessions":
             sessions.run(console)
+        console.print()
+
+
+def _system_submenu(console: Console):
+    while True:
+        choice = inquirer.select(
+            message="System:",
+            choices=["Tool Status", "Install Missing Tools", "Plugins", "Back"],
+            pointer="❯",
+        ).execute()
+        if choice == "Back":
+            return
         elif choice == "Tool Status":
             show_tool_status(console)
         elif choice == "Install Missing Tools":
