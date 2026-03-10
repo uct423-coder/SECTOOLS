@@ -113,7 +113,7 @@ def show_dashboard(console: Console):
     # Quick Actions hint
     console.print(
         Panel(
-            "[bold]Select a tool from the menu below to get started[/bold]",
+            "[bold]Select a tool below or use ⚡ Quick Launch[/bold]  [dim]n=Nmap  s=SQLMap  g=Gobuster  r=Recon  o=OSINT[/dim]",
             border_style="dim",
         )
     )

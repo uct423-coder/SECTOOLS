@@ -29,6 +29,7 @@ from sectools import (
     scan_profiles, auto_installer,
 )
 from sectools import osint, screenshot, cred_manager, scope, sessions
+from sectools.onboarding import needs_onboarding, run_onboarding
 
 console = Console()
 
@@ -77,6 +78,51 @@ for _cat, _tools in CATEGORIES.items():
     for _label, _handler in _tools:
         ALL_TOOL_ITEMS.append((_cat, _label, _handler))
         HANDLERS[_label] = _handler
+
+
+SHORTCUTS = {
+    "n": "Nmap — Network Scanner",
+    "k": "Nikto — Web Server Scanner",
+    "g": "Gobuster — Dir & DNS Brute Force",
+    "r": "Recon Autopilot",
+    "o": "OSINT — Subdomain & Recon",
+    "m": "Metasploit — Framework",
+    "s": "SQLMap — SQL Injection",
+    "h": "Hydra — Brute Force",
+    "j": "John the Ripper",
+    "c": "Hashcat — GPU Cracker",
+    "t": "Netcat — Network Swiss Army Knife",
+    "p": "HTTP Probe — Quick URL Scanner",
+    "w": "Screenshot — Capture Web Pages",
+}
+
+
+def _quick_launch(console: Console):
+    """Quick launch a tool via keyboard shortcut."""
+    from rich.table import Table
+    table = Table(title="Quick Launch Shortcuts", border_style="cyan", padding=(0, 2))
+    table.add_column("Key", style="bold cyan", justify="center")
+    table.add_column("Tool")
+    for key, tool in SHORTCUTS.items():
+        table.add_row(key, tool)
+    table.add_row("q", "[dim]Cancel[/dim]")
+    console.print(table)
+
+    key = inquirer.text(message="Press key:").execute().strip().lower()
+    if key == "q" or not key:
+        return
+
+    tool_name = SHORTCUTS.get(key)
+    if tool_name and tool_name in HANDLERS:
+        try:
+            HANDLERS[tool_name](console)
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Interrupted.[/yellow]")
+        except FileNotFoundError as e:
+            name = e.filename or "unknown"
+            console.print(f"\n[red]{name} is not installed.[/red]")
+    else:
+        console.print(f"[yellow]Unknown shortcut: {key}[/yellow]")
 
 
 def _run_category(console: Console, category: str):
@@ -141,6 +187,7 @@ def _build_menu_choices() -> list:
         "📝 Generate Report",
         "📖 Cheat Sheets",
         "⚙️  Settings",
+        "⚡ Quick Launch",
         "★  Manage Favorites",
         "Clear Screen",
         "Exit",
@@ -320,6 +367,8 @@ def _manage_favorites(console: Console):
 
 def main():
     os.system("clear" if os.name != "nt" else "cls")
+    if needs_onboarding():
+        run_onboarding(console)
     _auto_cleanup(console)
     show_dashboard(console)
 
@@ -369,6 +418,8 @@ def main():
                 cheatsheet_menu(console)
             elif "Settings" in choice:
                 config_menu(console)
+            elif "Quick Launch" in choice:
+                _quick_launch(console)
             elif "Favorites" in choice:
                 _manage_favorites(console)
 
