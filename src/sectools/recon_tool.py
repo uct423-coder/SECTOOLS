@@ -4,7 +4,7 @@ from pathlib import Path
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-from sectools.utils import extract_hostname, LOGS_DIR, save_target
+from sectools.utils import extract_hostname, LOGS_DIR, save_target, WORDLISTS_DIR
 
 
 RECON_SCANS = {
@@ -64,8 +64,7 @@ def run(console: Console):
         return
 
     scans = RECON_SCANS[preset]
-    _repo_dir = Path(__file__).resolve().parent.parent.parent
-    wordlist = str(_repo_dir / "wordlists" / "common.txt")
+    wordlist = str(WORDLISTS_DIR / "common.txt")
 
     LOGS_DIR.mkdir(exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")

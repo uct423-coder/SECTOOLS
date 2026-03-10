@@ -19,7 +19,8 @@ from sectools.utils import (
 )
 
 from sectools.config import load_config
-_default_wordlist = load_config().get("default_dirwordlist", "common.txt")
+from sectools.utils import WORDLISTS_DIR
+_default_wordlist = load_config().get("default_dirwordlist", str(WORDLISTS_DIR / "common.txt"))
 
 SCAN_TOOLS = {
     "nmap fast scan (-F)": ["nmap", "-F"],

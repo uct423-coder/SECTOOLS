@@ -113,7 +113,8 @@ def _run_workflow(console: Console, name: str, workflow: dict):
 
     # Wordlist (if any step needs it)
     config = load_config()
-    wordlist = config.get("default_dirwordlist", "common.txt")
+    from sectools.utils import WORDLISTS_DIR
+    wordlist = config.get("default_dirwordlist", str(WORDLISTS_DIR / "common.txt"))
     needs_wl = any(s.get("needs_wordlist") for s in steps)
     if needs_wl:
         wordlist = pick_wordlist("Wordlist:", wordlist)

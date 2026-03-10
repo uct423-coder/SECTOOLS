@@ -11,7 +11,7 @@ from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installe
 from sectools.config import load_config
 from sectools.tips import get_tip
 
-VERSION = "1.1.7"
+VERSION = "1.2.0"
 
 BANNER = r"""[bold cyan]
    ____            _____           _

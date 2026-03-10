@@ -20,6 +20,23 @@ DEFAULT_CONFIG = {
 THEME_CHOICES = ["cyan", "green", "red", "blue", "magenta"]
 
 
+def _migrate_config(config: dict) -> bool:
+    """Fix stale wordlist paths from old onboarding. Returns True if changed."""
+    changed = False
+    wordlists_dir = str(Path.home() / ".sectools-wordlists")
+    for key in ("default_wordlist", "default_dirwordlist"):
+        val = config.get(key, "")
+        if not val:
+            continue
+        bare = "/" not in val and "\\" not in val
+        stale = "/usr/share/wordlists/" in val
+        if bare or stale:
+            default_name = "default-passwords.txt" if key == "default_wordlist" else "common.txt"
+            config[key] = str(Path(wordlists_dir) / default_name)
+            changed = True
+    return changed
+
+
 def load_config() -> dict:
     """Load config from file, filling in defaults for any missing keys."""
     config = dict(DEFAULT_CONFIG)
@@ -30,6 +47,8 @@ def load_config() -> dict:
             config.update(saved)
         except (json.JSONDecodeError, OSError):
             pass
+    if _migrate_config(config):
+        save_config(config)
     return config
 
 
