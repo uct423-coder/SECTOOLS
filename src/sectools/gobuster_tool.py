@@ -9,22 +9,7 @@ MODES = {
     "Virtual host brute-force (vhost)": "vhost",
 }
 
-from pathlib import Path
-
-def _find_wordlist() -> str:
-    """Find common.txt wordlist, checking several likely locations."""
-    candidates = [
-        Path(__file__).resolve().parent.parent.parent / "wordlists" / "common.txt",
-        Path.home() / "wordlists" / "common.txt",
-        Path("/usr/share/wordlists/dirb/common.txt"),
-        Path("/usr/share/seclists/Discovery/Web-Content/common.txt"),
-    ]
-    for c in candidates:
-        if c.exists():
-            return str(c)
-    return str(candidates[0])  # fallback to repo-relative
-
-DEFAULT_WORDLIST = _find_wordlist()
+from sectools.config import load_config
 
 
 def run(console: Console):
@@ -50,7 +35,7 @@ def run(console: Console):
             return
         wordlist = inquirer.text(
             message="Wordlist path:",
-            default=DEFAULT_WORDLIST,
+            default=load_config().get("default_wordlist", "common.txt"),
         ).execute().strip()
         extensions = inquirer.text(message="File extensions (e.g. php,html,txt) or leave empty:").execute().strip()
         cmd = ["gobuster", "dir", "-u", url, "-w", wordlist]
@@ -63,7 +48,7 @@ def run(console: Console):
             return
         wordlist = inquirer.text(
             message="Wordlist path:",
-            default=DEFAULT_WORDLIST,
+            default=load_config().get("default_wordlist", "common.txt"),
         ).execute().strip()
         cmd = ["gobuster", "dns", "-d", domain, "-w", wordlist]
     else:
@@ -73,7 +58,7 @@ def run(console: Console):
             return
         wordlist = inquirer.text(
             message="Wordlist path:",
-            default=DEFAULT_WORDLIST,
+            default=load_config().get("default_wordlist", "common.txt"),
         ).execute().strip()
         cmd = ["gobuster", "vhost", "-u", url, "-w", wordlist]
 
