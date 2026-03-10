@@ -60,10 +60,26 @@ def extract_hostname(target: str) -> tuple[str, bool]:
 
 def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.CompletedProcess:
     """Run a command, display it, capture output to a log file, and stream to terminal."""
+    from sectools.proxy import get_proxy_args, get_proxy_env
+
     LOGS_DIR.mkdir(exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_name = tool_name.lower().replace(" ", "_")
     log_file = LOGS_DIR / f"{safe_name}_{timestamp}.log"
+
+    # Inject proxy flags if enabled
+    binary = cmd[0] if cmd else ""
+    proxy_args = get_proxy_args(binary)
+    if proxy_args:
+        cmd = [cmd[0]] + proxy_args + cmd[1:]
+        console.print(f"[dim]Proxy: {' '.join(proxy_args)}[/dim]")
+
+    # Proxy env vars for tools that use them
+    env = None
+    proxy_env = get_proxy_env()
+    if proxy_env:
+        import os
+        env = {**os.environ, **proxy_env}
 
     console.print(f"[dim]Running: {' '.join(cmd)}[/dim]")
     console.print(f"[dim]Log: {log_file}[/dim]\n")
@@ -71,7 +87,7 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
     with open(log_file, "w") as f:
         f.write(f"# {tool_name} scan — {datetime.datetime.now().isoformat()}\n")
         f.write(f"# Command: {' '.join(cmd)}\n\n")
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
         for line in process.stdout:
             print(line, end="", flush=True)
             f.write(line)

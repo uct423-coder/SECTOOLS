@@ -29,6 +29,8 @@ from sectools import (
     scan_profiles, auto_installer,
 )
 from sectools import osint, screenshot, cred_manager, scope, sessions
+from sectools import workflows
+from sectools.proxy import proxy_menu
 from sectools.onboarding import needs_onboarding, run_onboarding
 
 console = Console()
@@ -183,10 +185,12 @@ def _build_menu_choices() -> list:
     # Other
     choices.append(Separator("──────────"))
     choices.extend([
+        "🔗 Workflows",
         "🗂️  Management",
         "📝 Generate Report",
         "📖 Cheat Sheets",
         "⚙️  Settings",
+        "🌐 Proxy Settings",
         "⚡ Quick Launch",
         "★  Manage Favorites",
         "Clear Screen",
@@ -410,6 +414,10 @@ def main():
                     tool_name = e.filename or "unknown"
                     console.print(f"\n[red]{tool_name} is not installed.[/red]")
                     console.print(f"[yellow]Install it with: brew install {tool_name}[/yellow]")
+            elif "Workflows" in choice:
+                workflows.run(console)
+            elif "Proxy" in choice:
+                proxy_menu(console)
             elif "Management" in choice:
                 _management_submenu(console)
             elif "Report" in choice:
