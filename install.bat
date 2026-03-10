@@ -90,12 +90,36 @@ echo.
 echo [1m[6/7] Setting up wordlists...[0m
 set "WORDLISTS_DIR=%USERPROFILE%\.sectools-wordlists"
 if not exist "%WORDLISTS_DIR%" mkdir "%WORDLISTS_DIR%"
+
+:: Copy bundled wordlists
 if exist "%~dp0wordlists" (
     xcopy /Y /Q "%~dp0wordlists\*" "%WORDLISTS_DIR%\" >nul 2>nul
-    echo   [32m[+][0m Wordlists copied to %WORDLISTS_DIR%
-) else (
-    echo   [31m[!][0m No wordlists directory found in repo
+    echo   [32m[+][0m Bundled wordlists copied
 )
+
+:: Download rockyou.txt
+if not exist "%WORDLISTS_DIR%\rockyou.txt" (
+    echo   [36m[*][0m Downloading rockyou.txt ^(this may take a minute^)...
+    powershell -NoProfile -Command "(New-Object Net.WebClient).DownloadFile('https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt', '%WORDLISTS_DIR%\rockyou.txt')" >nul 2>nul
+    if exist "%WORDLISTS_DIR%\rockyou.txt" (
+        echo   [32m[+][0m rockyou.txt downloaded
+    ) else (
+        echo   [33m[!][0m Failed to download rockyou.txt
+    )
+) else (
+    echo   [32m[+][0m rockyou.txt already exists
+)
+
+:: Download SecLists essentials
+set "SL=https://raw.githubusercontent.com/danielmiessler/SecLists/master"
+
+call :dl_wordlist "subdomains-top1million-5000.txt" "%SL%/Discovery/DNS/subdomains-top1million-5000.txt"
+call :dl_wordlist "directory-list-2.3-small.txt"    "%SL%/Discovery/Web-Content/directory-list-2.3-small.txt"
+call :dl_wordlist "top-usernames-shortlist.txt"     "%SL%/Usernames/top-usernames-shortlist.txt"
+call :dl_wordlist "default-passwords.txt"           "%SL%/Passwords/Default-Credentials/default-passwords.txt"
+call :dl_wordlist "common-web-passwords.txt"        "%SL%/Passwords/Common-Credentials/10k-most-common.txt"
+
+echo   [90mWordlists directory: %WORDLISTS_DIR%[0m
 echo.
 
 :: ── Step 7: Global command ──
@@ -141,5 +165,19 @@ if %errorlevel% equ 0 (
     ) else (
         echo   [31m[!][0m Failed to install %2 — skipping
     )
+)
+exit /b 0
+
+:dl_wordlist
+if not exist "%WORDLISTS_DIR%\%~1" (
+    echo   [36m[*][0m Downloading %~1...
+    powershell -NoProfile -Command "(New-Object Net.WebClient).DownloadFile('%~2', '%WORDLISTS_DIR%\%~1')" >nul 2>nul
+    if exist "%WORDLISTS_DIR%\%~1" (
+        echo   [32m[+][0m %~1
+    ) else (
+        echo   [33m[!][0m Failed: %~1
+    )
+) else (
+    echo   [32m[+][0m %~1 already exists
 )
 exit /b 0

@@ -131,29 +131,30 @@ else
     echo -e "  ${GREEN}[✓]${RESET} rockyou.txt already exists"
 fi
 
-# Download SecLists essentials
+# Download SecLists essentials (POSIX-compatible — no associative arrays)
 SECLISTS_BASE="https://raw.githubusercontent.com/danielmiessler/SecLists/master"
-declare -A SECLISTS_DOWNLOADS=(
-    ["subdomains-top1million-5000.txt"]="Discovery/DNS/subdomains-top1million-5000.txt"
-    ["directory-list-2.3-small.txt"]="Discovery/Web-Content/directory-list-2.3-small.txt"
-    ["top-usernames-shortlist.txt"]="Usernames/top-usernames-shortlist.txt"
-    ["default-passwords.txt"]="Passwords/Default-Credentials/default-passwords.txt"
-    ["common-web-passwords.txt"]="Passwords/Common-Credentials/10k-most-common.txt"
-)
 
-for filename in "${!SECLISTS_DOWNLOADS[@]}"; do
+download_if_missing() {
+    local filename="$1"
+    local url="$2"
     if [ ! -f "$WORDLISTS_DIR/$filename" ]; then
         echo -e "  ${CYAN}[*]${RESET} Downloading $filename..."
-        if curl -fsSL "$SECLISTS_BASE/${SECLISTS_DOWNLOADS[$filename]}" \
-            -o "$WORDLISTS_DIR/$filename" 2>/dev/null; then
+        if curl -fsSL "$url" -o "$WORDLISTS_DIR/$filename" 2>/dev/null; then
             echo -e "  ${GREEN}[✓]${RESET} $filename"
         else
             echo -e "  ${YELLOW}[!]${RESET} Failed: $filename"
+            rm -f "$WORDLISTS_DIR/$filename"
         fi
     else
         echo -e "  ${GREEN}[✓]${RESET} $filename already exists"
     fi
-done
+}
+
+download_if_missing "subdomains-top1million-5000.txt" "$SECLISTS_BASE/Discovery/DNS/subdomains-top1million-5000.txt"
+download_if_missing "directory-list-2.3-small.txt"    "$SECLISTS_BASE/Discovery/Web-Content/directory-list-2.3-small.txt"
+download_if_missing "top-usernames-shortlist.txt"     "$SECLISTS_BASE/Usernames/top-usernames-shortlist.txt"
+download_if_missing "default-passwords.txt"           "$SECLISTS_BASE/Passwords/Default-Credentials/default-passwords.txt"
+download_if_missing "common-web-passwords.txt"        "$SECLISTS_BASE/Passwords/Common-Credentials/10k-most-common.txt"
 
 echo -e "  ${DIM}Wordlists directory: $WORDLISTS_DIR${RESET}"
 echo ""
