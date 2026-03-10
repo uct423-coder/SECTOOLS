@@ -1,4 +1,3 @@
-import os
 import sys
 import datetime
 
@@ -370,7 +369,7 @@ def _manage_favorites(console: Console):
 
 
 def main():
-    os.system("clear" if os.name != "nt" else "cls")
+    console.clear()
     if needs_onboarding():
         run_onboarding(console)
     _auto_cleanup(console)
@@ -391,7 +390,7 @@ def main():
             console.print("[bold green]Goodbye![/bold green]")
             break
         elif choice == "Clear Screen":
-            os.system("clear" if os.name != "nt" else "cls")
+            console.clear()
             show_dashboard(console)
             continue
 

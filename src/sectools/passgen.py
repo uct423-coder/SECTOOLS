@@ -27,8 +27,12 @@ def run(console: Console) -> None:
     """Generate secure random passwords."""
     console.print("\n[bold cyan]Password Generator[/bold cyan]\n")
 
-    length = int(inquirer.text(message="Password length:", default="16").execute())
-    count = int(inquirer.text(message="How many passwords:", default="5").execute())
+    try:
+        length = int(inquirer.text(message="Password length:", default="16").execute())
+        count = int(inquirer.text(message="How many passwords:", default="5").execute())
+    except ValueError:
+        console.print("[red]Please enter valid integers.[/red]")
+        return
 
     use_upper = inquirer.confirm(message="Include uppercase?", default=True).execute()
     use_lower = inquirer.confirm(message="Include lowercase?", default=True).execute()

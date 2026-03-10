@@ -1,0 +1,4 @@
+rich
+inquirerpy
+fpdf2
+cryptography

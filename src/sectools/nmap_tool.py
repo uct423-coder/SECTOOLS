@@ -1,4 +1,4 @@
-import subprocess
+import shlex
 from InquirerPy import inquirer
 from rich.console import Console
 from sectools.utils import extract_hostname, run_logged, ask_target
@@ -37,7 +37,7 @@ def run(console: Console):
 
     if PRESETS[preset] is None:
         flags_str = inquirer.text(message="Enter nmap flags:").execute()
-        flags = flags_str.split()
+        flags = shlex.split(flags_str)
     else:
         flags = PRESETS[preset]
 

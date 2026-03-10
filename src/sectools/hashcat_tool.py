@@ -1,4 +1,6 @@
-import subprocess
+import shlex
+import platform
+from pathlib import Path
 from InquirerPy import inquirer
 from rich.console import Console
 from sectools.utils import run_logged, pick_wordlist, WORDLISTS_DIR
@@ -28,6 +30,8 @@ def run(console: Console):
     if not hashfile:
         console.print("[red]No hash file provided.[/red]")
         return
+    if not Path(hashfile).exists():
+        console.print(f"[yellow]Warning: {hashfile} not found.[/yellow]")
 
     hash_choice = inquirer.select(
         message="Hash type:",
@@ -55,7 +59,13 @@ def run(console: Console):
 
     if attack_mode == "0r":
         wordlist = pick_wordlist("Wordlist:", str(WORDLISTS_DIR / "rockyou.txt"))
-        rules = inquirer.text(message="Rules file:", default="/opt/homebrew/share/hashcat/rules/best64.rule").execute().strip()
+        if platform.system() == "Darwin":
+            default_rules = "/opt/homebrew/share/hashcat/rules/best64.rule"
+        elif platform.system() == "Linux":
+            default_rules = "/usr/share/hashcat/rules/best64.rule"
+        else:
+            default_rules = "best64.rule"
+        rules = inquirer.text(message="Rules file:", default=default_rules).execute().strip()
         cmd += ["-a", "0", "-r", rules, hashfile, wordlist]
     elif attack_mode == "3":
         mask = inquirer.text(message="Mask (e.g. ?a?a?a?a?a?a):", default="?a?a?a?a?a?a").execute().strip()

@@ -1,4 +1,4 @@
-import subprocess
+import shlex
 from InquirerPy import inquirer
 from rich.console import Console
 from sectools.utils import extract_hostname, run_logged, ask_target, pick_wordlist, WORDLISTS_DIR
@@ -40,7 +40,7 @@ def run(console: Console):
 
     if mode == "Custom flags":
         flags_str = inquirer.text(message="Enter hydra flags:").execute()
-        cmd = ["hydra"] + flags_str.split() + [hostname, service]
+        cmd = ["hydra"] + shlex.split(flags_str) + [hostname, service]
     elif mode == "Single user + password list":
         user = inquirer.text(message="Username:").execute().strip()
         wordlist = pick_wordlist("Password wordlist:", DEFAULT_PASSWORDS)

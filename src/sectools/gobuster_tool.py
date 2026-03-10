@@ -1,4 +1,3 @@
-import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
 from sectools.utils import run_logged, pick_wordlist

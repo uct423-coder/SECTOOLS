@@ -1,4 +1,5 @@
-import subprocess
+import shlex
+from pathlib import Path
 from InquirerPy import inquirer
 from rich.console import Console
 from sectools.utils import run_logged, pick_wordlist, WORDLISTS_DIR
@@ -19,6 +20,8 @@ def run(console: Console):
     if not hashfile:
         console.print("[red]No hash file provided.[/red]")
         return
+    if not Path(hashfile).exists():
+        console.print(f"[yellow]Warning: {hashfile} not found.[/yellow]")
 
     preset = inquirer.select(
         message="Mode:",
@@ -34,7 +37,7 @@ def run(console: Console):
     val = PRESETS[preset]
     if val is None:
         flags_str = inquirer.text(message="Enter john flags:").execute()
-        flags = flags_str.split()
+        flags = shlex.split(flags_str)
     elif val == "wordlist":
         wordlist = pick_wordlist("Wordlist:", str(WORDLISTS_DIR / "rockyou.txt"))
         flags = [f"--wordlist={wordlist}"]

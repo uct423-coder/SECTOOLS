@@ -4,6 +4,10 @@ import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
 
+
+def _valid_port(port: str) -> bool:
+    return port.isdigit() and 1 <= int(port) <= 65535
+
 MODES = {
     "Listen for connections": "listen",
     "Connect to host": "connect",
@@ -28,19 +32,19 @@ def run(console: Console):
     action = MODES[mode]
 
     # Use ncat on Windows, nc on macOS/Linux
-    nc = "ncat" if os.name == "nt" or shutil.which("ncat") and not shutil.which("nc") else "nc"
+    nc = "ncat" if (os.name == "nt" or (shutil.which("ncat") and not shutil.which("nc"))) else "nc"
 
     if action == "listen":
         port = inquirer.text(message="Port to listen on:").execute().strip()
-        if not port:
-            console.print("[red]No port provided.[/red]")
+        if not port or not _valid_port(port):
+            console.print("[red]Invalid port. Must be 1-65535.[/red]")
             return
         cmd = [nc, "-lvnp", port]
     elif action == "connect":
         host = inquirer.text(message="Target host:").execute().strip()
         port = inquirer.text(message="Target port:").execute().strip()
-        if not host or not port:
-            console.print("[red]Host and port required.[/red]")
+        if not host or not port or not _valid_port(port):
+            console.print("[red]Host and valid port (1-65535) required.[/red]")
             return
         cmd = [nc, "-v", host, port]
     else:

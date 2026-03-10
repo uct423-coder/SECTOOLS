@@ -6,7 +6,7 @@ from InquirerPy import inquirer
 
 from sectools.notifications import notify
 
-SCHEDULED_TASKS: list[dict] = []
+SCHEDULED_TASKS: list[dict] = []  # In-memory only; tasks are lost on exit
 
 # Tool name -> (module, function_name)
 _TOOL_MAP = {

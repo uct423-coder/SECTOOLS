@@ -38,17 +38,26 @@ def run(console: Console) -> None:
     if isinstance(net, ipaddress.IPv6Network):
         total = net.num_addresses
         usable = max(total - 2, 0) if net.prefixlen < 127 else total
-        hosts = list(net.hosts())
-        first_usable = str(hosts[0]) if hosts else "N/A"
-        last_usable = str(hosts[-1]) if hosts else "N/A"
+        if total > 2**20:
+            # Avoid enumerating huge networks; calculate first/last directly
+            first_usable = str(net.network_address + 1)
+            last_usable = str(net.broadcast_address - 1) if net.prefixlen < 127 else str(net.broadcast_address)
+        else:
+            hosts = list(net.hosts())
+            first_usable = str(hosts[0]) if hosts else "N/A"
+            last_usable = str(hosts[-1]) if hosts else "N/A"
         ip_cls = "IPv6"
         wildcard = "N/A"
     else:
         total = net.num_addresses
         usable = max(total - 2, 0)
-        hosts = list(net.hosts()) if net.prefixlen < 31 else list(net)
-        first_usable = str(hosts[0]) if hosts else "N/A"
-        last_usable = str(hosts[-1]) if hosts else "N/A"
+        if net.prefixlen < 31:
+            first_usable = str(net.network_address + 1)
+            last_usable = str(net.broadcast_address - 1)
+        else:
+            hosts = list(net)
+            first_usable = str(hosts[0]) if hosts else "N/A"
+            last_usable = str(hosts[-1]) if hosts else "N/A"
         wildcard = str(ipaddress.IPv4Address(int(net.hostmask)))
         ip_cls = _ip_class(net)
 
