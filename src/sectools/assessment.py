@@ -20,10 +20,13 @@ from rich.table import Table
 
 from sectools.utils import (
     extract_hostname, pick_wordlist, save_target, check_installed,
-    _html_style, LOGS_DIR,
+    _html_style, LOGS_DIR, WORDLISTS_DIR,
 )
+from sectools.config import load_config
 from sectools.http_probe import _get_ssl_info
 from sectools.notifications import notify
+
+DEFAULT_WORDLIST = load_config().get("default_dirwordlist", str(WORDLISTS_DIR / "common.txt"))
 
 # ── Scan matrix ────────────────────────────────────────────────────
 
@@ -117,9 +120,9 @@ def run(console: Console) -> None:
     needs_wordlist = any(name in ("Gobuster Dir Scan",) for name, _ in scans)
     if needs_wordlist:
         if inquirer.confirm(message="Choose a custom wordlist? (default: common.txt)", default=False).execute():
-            wordlist = pick_wordlist("Wordlist:", "/usr/share/wordlists/dirb/common.txt")
+            wordlist = pick_wordlist("Wordlist:", "DEFAULT_WORDLIST")
     if not wordlist:
-        wordlist = "/usr/share/wordlists/dirb/common.txt"
+        wordlist = "DEFAULT_WORDLIST"
 
     # 5. Summary
     summary = Table(title="Assessment Plan", border_style="cyan")
@@ -378,7 +381,7 @@ def _scan_gobuster(config: dict) -> tuple[str, int]:
     """Gobuster directory scan."""
     if not check_installed("gobuster"):
         raise FileNotFoundError(None, "gobuster")
-    wordlist = config.get("wordlist", "/usr/share/wordlists/dirb/common.txt")
+    wordlist = config.get("wordlist", "DEFAULT_WORDLIST")
     if not Path(wordlist).exists():
         return f"Wordlist not found: {wordlist}", 0
     result = subprocess.run(
