@@ -125,27 +125,13 @@ def _build_menu_choices() -> list:
         count = len(CATEGORIES[cat])
         choices.append(f"{cat}  ({count})")
 
-    # Management
-    choices.append(Separator("── Management ──"))
-    choices.extend([
-        "Targets & Groups",
-        "Scan Profiles",
-        "Wordlist Manager",
-        "Scheduler",
-        "Scope Manager",
-        "Credential Manager",
-        "Sessions",
-    ])
-
     # Other
-    choices.append(Separator("── Other ──"))
+    choices.append(Separator("──────────"))
     choices.extend([
-        "Tool Status",
-        "Install Missing Tools",
+        "Management",
         "Generate Report",
         "Cheat Sheets",
         "Settings",
-        "Plugins",
         "Manage Favorites",
         "Clear Screen",
         "Exit",
@@ -174,18 +160,29 @@ def _auto_cleanup(console: Console):
         console.print(f"[dim]Auto-cleanup: deleted {deleted} log(s) older than {retention_days} days.[/dim]")
 
 
-def _targets_submenu(console: Console):
-    """Targets & Groups sub-menu."""
+def _management_submenu(console: Console):
+    """Management sub-menu — targets, profiles, scope, sessions, etc."""
     config = load_config()
     theme = config.get("theme_color", "cyan")
 
     while True:
         choice = inquirer.select(
-            message="Targets & Groups:",
+            message="Management:",
             choices=[
                 "View Saved Targets",
                 "Edit Target Notes",
                 "Target Groups",
+                "Scan Profiles",
+                "Wordlist Manager",
+                "Schedule a Scan",
+                "View Scheduled Scans",
+                "Scope Manager",
+                "Credential Manager",
+                "Sessions",
+                Separator("──────────"),
+                "Tool Status",
+                "Install Missing Tools",
+                "Plugins",
                 "Back",
             ],
             pointer="❯",
@@ -208,23 +205,26 @@ def _targets_submenu(console: Console):
             edit_target_notes(console)
         elif choice == "Target Groups":
             target_groups.run(console)
-        console.print()
-
-
-def _scheduler_submenu(console: Console):
-    """Scheduler sub-menu."""
-    while True:
-        choice = inquirer.select(
-            message="Scheduler:",
-            choices=["Schedule a Scan", "View Scheduled Scans", "Back"],
-            pointer="❯",
-        ).execute()
-        if choice == "Back":
-            return
+        elif choice == "Scan Profiles":
+            scan_profiles.run(console)
+        elif choice == "Wordlist Manager":
+            wordlist_mgr.run(console)
         elif choice == "Schedule a Scan":
             schedule_scan(console)
         elif choice == "View Scheduled Scans":
             view_scheduled(console)
+        elif choice == "Scope Manager":
+            scope.run(console)
+        elif choice == "Credential Manager":
+            cred_manager.run(console)
+        elif choice == "Sessions":
+            sessions.run(console)
+        elif choice == "Tool Status":
+            show_tool_status(console)
+        elif choice == "Install Missing Tools":
+            auto_installer.run(console)
+        elif choice == "Plugins":
+            plugins_menu(console)
         console.print()
 
 
@@ -304,34 +304,14 @@ def main():
                     tool_name = e.filename or "unknown"
                     console.print(f"\n[red]{tool_name} is not installed.[/red]")
                     console.print(f"[yellow]Install it with: brew install {tool_name}[/yellow]")
-            # Management
-            elif choice == "Targets & Groups":
-                _targets_submenu(console)
-            elif choice == "Scan Profiles":
-                scan_profiles.run(console)
-            elif choice == "Wordlist Manager":
-                wordlist_mgr.run(console)
-            elif choice == "Scheduler":
-                _scheduler_submenu(console)
-            elif choice == "Scope Manager":
-                scope.run(console)
-            elif choice == "Credential Manager":
-                cred_manager.run(console)
-            elif choice == "Sessions":
-                sessions.run(console)
-            # Other
-            elif choice == "Tool Status":
-                show_tool_status(console)
-            elif choice == "Install Missing Tools":
-                auto_installer.run(console)
+            elif choice == "Management":
+                _management_submenu(console)
             elif choice == "Generate Report":
                 generate_report(console)
             elif choice == "Cheat Sheets":
                 cheatsheet_menu(console)
             elif choice == "Settings":
                 config_menu(console)
-            elif choice == "Plugins":
-                plugins_menu(console)
             elif choice == "Manage Favorites":
                 _manage_favorites(console)
 
