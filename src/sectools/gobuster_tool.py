@@ -35,7 +35,7 @@ def run(console: Console):
             return
         wordlist = inquirer.text(
             message="Wordlist path:",
-            default=load_config().get("default_wordlist", "common.txt"),
+            default=load_config().get("default_dirwordlist", "common.txt"),
         ).execute().strip()
         extensions = inquirer.text(message="File extensions (e.g. php,html,txt) or leave empty:").execute().strip()
         cmd = ["gobuster", "dir", "-u", url, "-w", wordlist]
@@ -48,7 +48,7 @@ def run(console: Console):
             return
         wordlist = inquirer.text(
             message="Wordlist path:",
-            default=load_config().get("default_wordlist", "common.txt"),
+            default=load_config().get("default_dirwordlist", "common.txt"),
         ).execute().strip()
         cmd = ["gobuster", "dns", "-d", domain, "-w", wordlist]
     else:
@@ -58,7 +58,7 @@ def run(console: Console):
             return
         wordlist = inquirer.text(
             message="Wordlist path:",
-            default=load_config().get("default_wordlist", "common.txt"),
+            default=load_config().get("default_dirwordlist", "common.txt"),
         ).execute().strip()
         cmd = ["gobuster", "vhost", "-u", url, "-w", wordlist]
 

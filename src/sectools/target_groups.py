@@ -18,7 +18,8 @@ from sectools.utils import (
     run_logged,
 )
 
-_default_wordlist = "common.txt" if os.name == "nt" else "/usr/share/wordlists/dirb/common.txt"
+from sectools.config import load_config
+_default_wordlist = load_config().get("default_dirwordlist", "common.txt")
 
 SCAN_TOOLS = {
     "nmap fast scan (-F)": ["nmap", "-F"],
