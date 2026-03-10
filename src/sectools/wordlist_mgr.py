@@ -24,6 +24,30 @@ PRESET_WORDLISTS = {
 }
 
 
+ESSENTIAL_WORDLISTS = {
+    "common.txt": "https://raw.githubusercontent.com/v0re/dirb/master/wordlists/common.txt",
+    "top-usernames-shortlist.txt": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Usernames/top-usernames-shortlist.txt",
+    "default-passwords.txt": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Default-Credentials/default-passwords.txt",
+}
+
+
+def ensure_wordlists(console: Console) -> None:
+    """Auto-download essential wordlists if missing."""
+    WORDLIST_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, url in ESSENTIAL_WORDLISTS.items():
+        dest = WORDLIST_DIR / filename
+        if dest.exists():
+            continue
+        console.print(f"  [dim]Downloading {filename}...[/dim]", end=" ")
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "SecTools/1.0"})
+            resp = urllib.request.urlopen(req, timeout=15)
+            dest.write_bytes(resp.read())
+            console.print("[green]✔[/green]")
+        except Exception as e:
+            console.print(f"[red]✘ {e}[/red]")
+
+
 def _get_all_wordlists() -> list[Path]:
     """Collect all .txt wordlists from both directories."""
     files = []

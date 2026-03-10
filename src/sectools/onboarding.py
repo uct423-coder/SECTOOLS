@@ -69,6 +69,11 @@ def run_onboarding(console: Console):
 
     save_config(config)
 
+    # Auto-download essential wordlists
+    console.print("\n[bold cyan]Downloading essential wordlists...[/bold cyan]")
+    from sectools.wordlist_mgr import ensure_wordlists
+    ensure_wordlists(console)
+
     if setup_scope:
         from sectools.scope import run as scope_menu
         scope_menu(console)

@@ -140,6 +140,10 @@ def run(console: Console) -> None:
         console.print("[yellow]Cancelled.[/yellow]")
         return
 
+    # Ensure wordlists exist
+    from sectools.wordlist_mgr import ensure_wordlists
+    ensure_wordlists(console)
+
     # 6. Run
     config = {
         "url": url, "hostname": hostname, "depth": depth,
