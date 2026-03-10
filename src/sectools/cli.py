@@ -147,42 +147,69 @@ def cmd_uninstall():
         shutil.rmtree(venv_dir)
         print(f"  Removed virtual environment: {venv_dir}")
 
-    # Ask about config/data files
+    # Windows: remove sectool.bat wrapper
+    if os.name == "nt":
+        bat = repo / "sectool.bat"
+        if bat.exists():
+            bat.unlink()
+            print(f"  Removed {bat}")
+
+    # All config/data files and directories SecTools creates
     config_files = [
         Path.home() / ".sectools-config.json",
         Path.home() / ".sectools-targets",
         Path.home() / ".sectools-profiles.json",
+        Path.home() / ".sectools-creds.json",
+        Path.home() / ".sectools-scope.json",
+        Path.home() / ".sectools-workflows.json",
+        Path.home() / ".sectools-sessions.json",
     ]
     data_dirs = [
         Path.home() / "sectools-logs",
-        Path.home() / "sectools-wordlists",
+        Path.home() / ".sectools-wordlists",
         Path.home() / ".sectools-plugins",
     ]
 
-    has_data = any(f.exists() for f in config_files) or any(d.exists() for d in data_dirs)
-    if has_data:
-        print("\nUser data found:")
-        for f in config_files:
-            if f.exists():
-                print(f"  {f}")
-        for d in data_dirs:
-            if d.exists():
-                print(f"  {d}/")
+    # Find any remaining .sectools-* files we might have missed
+    for f in Path.home().glob(".sectools-*"):
+        if f.is_file() and f not in config_files:
+            config_files.append(f)
+        elif f.is_dir() and f not in data_dirs:
+            data_dirs.append(f)
 
-        answer = input("\nDelete user data too? (y/N): ").strip().lower()
+    existing_files = [f for f in config_files if f.exists()]
+    existing_dirs = [d for d in data_dirs if d.exists()]
+
+    if existing_files or existing_dirs:
+        print("\nUser data found:")
+        for f in existing_files:
+            size = f.stat().st_size
+            print(f"  {f}  ({_human_size(size)})")
+        for d in existing_dirs:
+            total = sum(f.stat().st_size for f in d.rglob("*") if f.is_file())
+            print(f"  {d}/  ({_human_size(total)})")
+
+        answer = input("\nDelete ALL user data? This cannot be undone. (y/N): ").strip().lower()
         if answer == "y":
-            for f in config_files:
-                if f.exists():
-                    f.unlink()
-                    print(f"  Deleted {f}")
-            for d in data_dirs:
-                if d.exists():
-                    shutil.rmtree(d)
-                    print(f"  Deleted {d}/")
+            for f in existing_files:
+                f.unlink()
+                print(f"  Deleted {f}")
+            for d in existing_dirs:
+                shutil.rmtree(d)
+                print(f"  Deleted {d}/")
+            print("\n  All user data removed.")
         else:
             print("  Kept user data.")
 
-    print(f"\nSecTools uninstalled. To remove the source code: rm -rf {repo}")
+    print(f"\nSecTools fully uninstalled. To remove the source code: rm -rf {repo}")
+
+
+def _human_size(size: int) -> str:
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024:
+            return f"{size:.0f} {unit}"
+        size /= 1024
+    return f"{size:.0f} TB"
 
 
 def cmd_reinstall():
