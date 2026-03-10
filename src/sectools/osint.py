@@ -22,7 +22,7 @@ def _subdomain_enum(console: Console):
         console.print("[red]No domain provided.[/red]")
         return
 
-    console.print(f"[dim]Querying crt.sh for {domain}...[/dim]")
+    console.print(f"  [dim]⟳ Querying crt.sh for {domain}...[/dim]")
     url = f"https://crt.sh/?q=%25.{domain}&output=json"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "SecTools/1.0"})
@@ -45,7 +45,7 @@ def _subdomain_enum(console: Console):
     for i, sub in enumerate(subdomains, 1):
         table.add_row(str(i), sub)
     console.print(table)
-    console.print(f"[green]{len(subdomains)} unique subdomains found.[/green]")
+    console.print(f"  [green]✔ {len(subdomains)} unique subdomains found.[/green]")
 
     _offer_save(console, f"osint_subdomains_{domain}", "\n".join(subdomains))
 
@@ -57,7 +57,7 @@ def _reverse_ip(console: Console):
         console.print("[red]No IP provided.[/red]")
         return
 
-    console.print(f"[dim]Querying HackerTarget for {ip}...[/dim]")
+    console.print(f"  [dim]⟳ Querying HackerTarget for {ip}...[/dim]")
     url = f"https://api.hackertarget.com/reverseiplookup/?q={ip}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "SecTools/1.0"})
@@ -91,7 +91,7 @@ def _http_headers(console: Console):
     if not url.startswith(("http://", "https://")):
         url = f"https://{url}"
 
-    console.print(f"[dim]Fetching headers for {url}...[/dim]")
+    console.print(f"  [dim]⟳ Fetching headers for {url}...[/dim]")
     try:
         req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "SecTools/1.0"})
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
@@ -120,7 +120,7 @@ def _offer_save(console: Console, prefix: str, content: str):
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         path = LOGS_DIR / f"{prefix}_{ts}.log"
         path.write_text(content)
-        console.print(f"[green]Saved to {path}[/green]")
+        console.print(f"  [green]✔ Saved to {path}[/green]")
 
 
 def run(console: Console):

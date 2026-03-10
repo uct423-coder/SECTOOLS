@@ -67,7 +67,7 @@ CODECS = {
 
 def run(console: Console) -> None:
     """Encode or decode text using various schemes."""
-    console.print("\n[bold cyan]Encoding / Decoding Utility[/bold cyan]\n")
+    console.print("\n[bold cyan]━━━ Encoding / Decoding ━━━[/bold cyan]\n")
 
     codec_name = inquirer.select(
         message="Select encoding:",

@@ -47,7 +47,7 @@ def _get_ssl_info(hostname: str, port: int) -> dict | None:
 
 def run(console: Console) -> None:
     """Probe a URL and display HTTP response details."""
-    console.print("\n[bold cyan]HTTP Probe[/bold cyan]\n")
+    console.print("\n[bold cyan]━━━ HTTP Probe ━━━[/bold cyan]\n")
 
     url = inquirer.text(message="Enter URL:").execute()
     if not url:
@@ -81,7 +81,8 @@ def run(console: Console) -> None:
         return
 
     status = getattr(resp, "status", getattr(resp, "code", "N/A"))
-    console.print(f"\n[bold]Status:[/bold] {status}")
+    status_color = "green" if str(status).startswith("2") else "yellow" if str(status).startswith("3") else "red"
+    console.print(f"\n  [bold]Status:[/bold] [{status_color}]{status}[/{status_color}]")
 
     # Redirect chain
     if redirects:
@@ -101,9 +102,9 @@ def run(console: Console) -> None:
     server = resp.headers.get("Server", "N/A")
     ctype = resp.headers.get("Content-Type", "N/A")
     clength = resp.headers.get("Content-Length", "N/A")
-    console.print(f"[bold]Server:[/bold] {server}")
-    console.print(f"[bold]Content-Type:[/bold] {ctype}")
-    console.print(f"[bold]Content-Length:[/bold] {clength}")
+    console.print(f"\n  [bold]Server:[/bold]         {server}")
+    console.print(f"  [bold]Content-Type:[/bold]   {ctype}")
+    console.print(f"  [bold]Content-Length:[/bold] {clength}")
 
     # Page title
     if "html" in ctype.lower():
@@ -112,7 +113,7 @@ def run(console: Console) -> None:
             parser = _TitleParser()
             parser.feed(body)
             if parser.title:
-                console.print(f"[bold]Page Title:[/bold] {parser.title}")
+                console.print(f"  [bold]Page Title:[/bold]    {parser.title}")
         except Exception:
             pass
 

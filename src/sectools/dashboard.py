@@ -11,7 +11,14 @@ from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installe
 from sectools.config import load_config
 from sectools.tips import get_tip
 
-VERSION = "1.1.3"
+VERSION = "1.1.7"
+
+BANNER = r"""[bold cyan]
+   ____            _____           _
+  / ___|  ___  ___|_   _|__   ___ | |___
+  \___ \ / _ \/ __| | |/ _ \ / _ \| / __|
+   ___) |  __/ (__  | | (_) | (_) | \__ \
+  |____/ \___|\___| |_|\___/ \___/|_|___/[/bold cyan]"""
 
 
 def _format_size(size_bytes: int) -> str:
@@ -63,18 +70,11 @@ def show_dashboard(console: Console):
     session = get_active_session()
 
     # Header
-    header_text = Text(justify="center")
-    header_text.append("SecTools CLI\n", style="bold white")
-    header_text.append("Made by Shepard Sotiroglou", style="dim")
     subtitle = f"v{VERSION}"
     if session:
-        subtitle += f"  |  Session: {session}"
-    header = Panel(
-        header_text,
-        subtitle=subtitle,
-        border_style=theme,
-    )
-    console.print(header)
+        subtitle += f"  ·  Session: {session}"
+    console.print(BANNER)
+    console.print(f"  [dim]Made by Shepard Sotiroglou[/dim]  ·  [dim]{subtitle}[/dim]\n")
 
     # Quick Stats
     targets_count = len(load_targets())
@@ -83,10 +83,10 @@ def show_dashboard(console: Console):
     disk = _log_disk_usage()
 
     stats = [
-        Panel(f"[bold]{targets_count}[/bold]\nTargets saved", border_style="green", expand=True),
-        Panel(f"[bold]{scans_count}[/bold]\nScans logged", border_style="blue", expand=True),
-        Panel(f"[bold]{inst}/{total}[/bold]\nTools installed", border_style="yellow", expand=True),
-        Panel(f"[bold]{disk}[/bold]\nLog disk usage", border_style="magenta", expand=True),
+        Panel(f"[bold green]{targets_count}[/bold green]\n[dim]Targets[/dim]", border_style="green", expand=True),
+        Panel(f"[bold blue]{scans_count}[/bold blue]\n[dim]Scans[/dim]", border_style="blue", expand=True),
+        Panel(f"[bold yellow]{inst}[/bold yellow][dim]/{total}[/dim]\n[dim]Tools[/dim]", border_style="yellow", expand=True),
+        Panel(f"[bold magenta]{disk}[/bold magenta]\n[dim]Logs[/dim]", border_style="magenta", expand=True),
     ]
     console.print(Columns(stats, equal=True, expand=True))
 
@@ -104,17 +104,14 @@ def show_dashboard(console: Console):
     # Tip of the Day
     console.print(
         Panel(
-            f"[bold]{get_tip()}[/bold]",
-            title="Tip of the Day",
-            border_style=theme,
+            f"[italic]{get_tip()}[/italic]",
+            title="[bold]💡 Tip[/bold]",
+            title_align="left",
+            border_style="dim",
         )
     )
 
     # Quick Actions hint
     console.print(
-        Panel(
-            "[bold]Select a tool below or use ⚡ Quick Launch[/bold]  [dim]n=Nmap  s=SQLMap  g=Gobuster  r=Recon  o=OSINT[/dim]",
-            border_style="dim",
-        )
+        f"  [dim]⚡ Quick Launch:[/dim] [bold dim]n[/bold dim][dim]=Nmap  s=SQLMap  g=Gobuster  r=Recon  o=OSINT[/dim]\n"
     )
-    console.print()

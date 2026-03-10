@@ -65,7 +65,7 @@ def _run_guided(console: Console, workflow: dict):
 
 
 def run(console: Console):
-    console.rule("[bold cyan]Metasploit[/bold cyan]")
+    console.print("\n[bold cyan]━━━ Metasploit Framework ━━━[/bold cyan]\n")
 
     action = inquirer.select(
         message="Action:",

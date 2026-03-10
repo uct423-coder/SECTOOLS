@@ -25,7 +25,7 @@ def _estimate_strength(length: int, pool_size: int) -> str:
 
 def run(console: Console) -> None:
     """Generate secure random passwords."""
-    console.print("\n[bold cyan]Password Generator[/bold cyan]\n")
+    console.print("\n[bold cyan]━━━ Password Generator ━━━[/bold cyan]\n")
 
     try:
         length = int(inquirer.text(message="Password length:", default="16").execute())
@@ -56,12 +56,12 @@ def run(console: Console) -> None:
     passwords = ["".join(secrets.choice(pool) for _ in range(length)) for _ in range(count)]
     strength = _estimate_strength(length, len(pool))
 
-    table = Table(title="Generated Passwords")
-    table.add_column("#", style="dim", justify="right")
-    table.add_column("Password", style="green")
+    table = Table(title="Generated Passwords", border_style="dim", show_lines=False)
+    table.add_column("#", style="dim", justify="right", width=4)
+    table.add_column("Password", style="bold green")
 
     for i, pw in enumerate(passwords, 1):
         table.add_row(str(i), pw)
 
     console.print(table)
-    console.print(f"\nCharacter pool size: {len(pool)}  |  Strength: {strength}")
+    console.print(f"\n  [dim]Pool size:[/dim] {len(pool)}  [dim]│[/dim]  [dim]Strength:[/dim] {strength}")

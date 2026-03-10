@@ -26,7 +26,7 @@ HASH_TYPES = [
 
 def run(console: Console) -> None:
     """Identify a hash type from user input."""
-    console.print("\n[bold cyan]Hash Identifier[/bold cyan]\n")
+    console.print("\n[bold cyan]━━━ Hash Identifier ━━━[/bold cyan]\n")
 
     hash_str = inquirer.text(message="Paste the hash string:").execute()
     if not hash_str:

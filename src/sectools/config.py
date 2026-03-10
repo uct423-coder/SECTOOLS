@@ -45,11 +45,14 @@ def config_menu(console: Console):
 
     while True:
         # Display current settings
-        table = Table(title="SecTools Configuration", border_style="dim")
-        table.add_column("Setting", style="bold")
-        table.add_column("Value")
+        table = Table(title="⚙️  Configuration", border_style="dim", show_lines=False)
+        table.add_column("Setting", style="cyan")
+        table.add_column("Value", style="bold")
         for key, value in config.items():
-            table.add_row(key, str(value))
+            display = str(value)
+            if isinstance(value, bool):
+                display = "[green]✔ on[/green]" if value else "[red]✘ off[/red]"
+            table.add_row(key, display)
         console.print(table)
 
         choices = list(config.keys()) + ["Save & Back"]
@@ -61,7 +64,7 @@ def config_menu(console: Console):
 
         if choice == "Save & Back":
             save_config(config)
-            console.print("[green]Configuration saved.[/green]")
+            console.print("[green]✔ Configuration saved.[/green]")
             return
 
         # Edit the chosen setting

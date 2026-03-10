@@ -100,7 +100,7 @@ PORTS: list[tuple[int, str, str, str]] = [
 
 def run(console: Console) -> None:
     """Look up common ports by number or service name."""
-    console.print("\n[bold cyan]Port Reference Lookup[/bold cyan]\n")
+    console.print("\n[bold cyan]━━━ Port Reference ━━━[/bold cyan]\n")
 
     query = inquirer.text(message="Search by port number or service name:").execute()
     if not query:

@@ -68,7 +68,7 @@ def _new_session(console: Console):
     if (SESSIONS_DIR / name).exists():
         console.print("[yellow]Session already exists. Switching to it.[/yellow]")
     activate_session(name)
-    console.print(f"[green]Session '{name}' activated.[/green]")
+    console.print(f"[green]✔ Session '{name}' activated.[/green]")
 
 
 def _switch_session(console: Console):
@@ -78,7 +78,7 @@ def _switch_session(console: Console):
         return
     name = inquirer.select(message="Switch to:", choices=sessions, pointer="❯").execute()
     activate_session(name)
-    console.print(f"[green]Switched to session '{name}'.[/green]")
+    console.print(f"[green]✔ Switched to session '{name}'.[/green]")
 
 
 def _end_session(console: Console):
@@ -87,7 +87,7 @@ def _end_session(console: Console):
         return
     name = _active_session
     deactivate_session()
-    console.print(f"[green]Session '{name}' ended. Back to default workspace.[/green]")
+    console.print(f"[green]✔ Session '{name}' ended. Back to default workspace.[/green]")
 
 
 def _show_sessions(console: Console):
@@ -95,12 +95,12 @@ def _show_sessions(console: Console):
     if not sessions:
         console.print("[yellow]No sessions.[/yellow]")
         return
-    table = Table(title="Sessions", border_style="dim")
-    table.add_column("Name", style="cyan")
-    table.add_column("Status")
+    table = Table(title="Sessions", border_style="dim", show_lines=False)
+    table.add_column("", width=3, justify="center")
+    table.add_column("Name", style="bold")
     for s in sessions:
-        status = "[bold green]active[/bold green]" if s == _active_session else ""
-        table.add_row(s, status)
+        icon = "[green]●[/green]" if s == _active_session else "[dim]○[/dim]"
+        table.add_row(icon, s)
     console.print(table)
 
 

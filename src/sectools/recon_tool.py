@@ -37,8 +37,8 @@ def _run_scan(cmd: list[str], name: str, log_file: Path, console: Console) -> st
 
 
 def run(console: Console):
-    console.rule("[bold cyan]Recon Autopilot[/bold cyan]")
-    console.print("[dim]Runs multiple scans on a target automatically.[/dim]\n")
+    console.print("\n[bold cyan]━━━ Recon Autopilot ━━━[/bold cyan]")
+    console.print("[dim]  Runs multiple scans on a target automatically.[/dim]\n")
 
     target = inquirer.text(message="Target (IP/hostname/URL):").execute().strip()
     if not target:
@@ -86,31 +86,30 @@ def run(console: Console):
     }
 
     total = len(scans)
-    console.print(f"\n[bold]Running {total} scans on [cyan]{hostname}[/cyan]...[/bold]\n")
+    console.print(f"\n  Running [bold]{total}[/bold] scans on [bold cyan]{hostname}[/bold cyan]...\n")
 
     results = {}
     for i, scan_key in enumerate(scans, 1):
         cmd, name = scan_map[scan_key]
-        console.print(f"[bold][{i}/{total}] {name}[/bold]")
+        console.print(f"  [dim]({i}/{total})[/dim] [bold]{name}[/bold]")
         output = _run_scan(cmd, name, log_file, console)
 
         # Show summary
         lines = [l for l in output.splitlines() if l.strip()]
         if "[SKIPPED" in output or "[TIMEOUT" in output:
-            console.print(f"  [yellow]{output.strip()}[/yellow]")
+            console.print(f"       [yellow]⚠ {output.strip()}[/yellow]")
         else:
-            console.print(f"  [green]Done — {len(lines)} lines of output[/green]")
+            console.print(f"       [green]✔ {len(lines)} lines of output[/green]")
         results[name] = output
         console.print()
 
-    console.print(f"[bold green]Recon complete! Full log: {log_file}[/bold green]\n")
+    console.print(f"  [bold green]✔ Recon complete![/bold green] Log: [cyan]{log_file}[/cyan]\n")
 
     # Print summary
-    console.rule("[bold]Summary[/bold]")
+    console.print("[bold cyan]━━━ Summary ━━━[/bold cyan]")
     for name, output in results.items():
-        console.print(f"\n[bold cyan]{name}[/bold cyan]")
+        console.print(f"\n  [bold]{name}[/bold]")
         lines = output.strip().splitlines()
-        # Show last 10 interesting lines
         interesting = [l for l in lines if l.strip() and not l.startswith("#")]
         for line in interesting[-10:]:
-            console.print(f"  {line}")
+            console.print(f"    [dim]│[/dim] {line}")

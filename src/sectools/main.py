@@ -387,7 +387,7 @@ def main():
             break
 
         if choice == "Exit":
-            console.print("[bold green]Goodbye![/bold green]")
+            console.print("\n  [bold green]✔[/bold green] [dim]Goodbye![/dim]\n")
             break
         elif choice == "Clear Screen":
             console.clear()

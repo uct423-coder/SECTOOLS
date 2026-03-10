@@ -17,9 +17,12 @@ def needs_onboarding() -> bool:
 
 def run_onboarding(console: Console):
     """Interactive first-run setup wizard."""
+    from sectools.dashboard import BANNER
+    console.print(BANNER)
+    console.print()
     welcome = Text(justify="center")
-    welcome.append("Welcome to SecTools!\n\n", style="bold cyan")
-    welcome.append("Let's set up your toolkit in a few quick steps.\n", style="dim")
+    welcome.append("Welcome to SecTools!\n\n", style="bold white")
+    welcome.append("Let's set up your toolkit in a few quick steps.", style="dim")
     console.print(Panel(welcome, border_style="cyan", padding=(1, 4)))
 
     config = dict(DEFAULT_CONFIG)
@@ -71,7 +74,7 @@ def run_onboarding(console: Console):
         scope_menu(console)
 
     done = Text(justify="center")
-    done.append("Setup complete!\n\n", style="bold green")
-    done.append("You can change these anytime in Settings.\n", style="dim")
+    done.append("✔ Setup complete!\n\n", style="bold green")
+    done.append("You can change these anytime in ⚙️  Settings.", style="dim")
     console.print(Panel(done, border_style="green", padding=(1, 4)))
     console.print()

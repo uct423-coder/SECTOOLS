@@ -47,12 +47,12 @@ def _format_size(path: Path) -> str:
 
 def _show_table(console: Console, logs: list[Path]):
     """Display a Rich table of all scan logs."""
-    table = Table(title="Scan History", show_lines=True)
-    table.add_column("#", style="dim", width=4)
+    table = Table(title="📋 Scan History", show_lines=False, border_style="dim")
+    table.add_column("#", style="dim", width=4, justify="right")
     table.add_column("Filename", style="cyan")
-    table.add_column("Tool", style="green")
-    table.add_column("Date", style="yellow")
-    table.add_column("Size", style="magenta", justify="right")
+    table.add_column("Tool", style="bold")
+    table.add_column("Date", style="dim")
+    table.add_column("Size", style="dim", justify="right")
 
     for i, log in enumerate(logs, 1):
         table.add_row(

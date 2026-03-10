@@ -76,19 +76,19 @@ def _build_install_command(binary: str, plat: str) -> list[str]:
 
 def _status_table(console: Console) -> list[str]:
     """Print a status table and return list of missing binaries."""
-    table = Table(title="Tool Status", border_style="dim")
-    table.add_column("Tool", style="cyan")
+    table = Table(title="Tool Status", border_style="dim", show_lines=False)
+    table.add_column("", width=3, justify="center")
+    table.add_column("Tool", style="bold")
     table.add_column("Binary", style="dim")
-    table.add_column("Status")
 
     missing = []
     for tool, binary in TOOL_BINARIES.items():
         if check_installed(binary):
-            status = "[bold green]installed[/bold green]"
+            icon = "[green]✔[/green]"
         else:
-            status = "[bold red]missing[/bold red]"
+            icon = "[red]✘[/red]"
             missing.append(binary)
-        table.add_row(tool, binary, status)
+        table.add_row(icon, tool, binary)
 
     console.print(table)
     console.print()
@@ -97,7 +97,7 @@ def _status_table(console: Console) -> list[str]:
 
 def run(console: Console):
     """Entry point: show tool status and offer to install missing tools."""
-    console.print("\n[bold cyan]Auto-Installer[/bold cyan]\n")
+    console.print("\n[bold cyan]━━━ Auto-Installer ━━━[/bold cyan]\n")
 
     missing = _status_table(console)
 
@@ -114,21 +114,21 @@ def run(console: Console):
     plat = _detect_platform()
     console.print(f"[dim]Detected platform: {plat}[/dim]\n")
 
-    for binary in missing:
+    for i, binary in enumerate(missing, 1):
         cmd = _build_install_command(binary, plat)
-        console.print(f"[bold]Running:[/bold] {' '.join(cmd)}")
+        console.print(f"  [dim][{i}/{len(missing)}][/dim] Installing [bold]{binary}[/bold]...")
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             if result.returncode == 0:
-                console.print(f"  [green]Success[/green]")
+                console.print(f"       [green]✔ Installed[/green]")
             else:
-                console.print(f"  [red]Failed (exit {result.returncode})[/red]")
+                console.print(f"       [red]✘ Failed (exit {result.returncode})[/red]")
                 if result.stderr.strip():
-                    console.print(f"  [dim]{result.stderr.strip()[:200]}[/dim]")
+                    console.print(f"       [dim]{result.stderr.strip()[:200]}[/dim]")
         except FileNotFoundError:
-            console.print(f"  [red]Package manager not found. Is it installed?[/red]")
+            console.print(f"       [red]✘ Package manager not found[/red]")
         except subprocess.TimeoutExpired:
-            console.print(f"  [red]Timed out after 5 minutes.[/red]")
+            console.print(f"       [red]✘ Timed out after 5 minutes[/red]")
 
     console.print("\n[bold]Updated status:[/bold]\n")
     _status_table(console)

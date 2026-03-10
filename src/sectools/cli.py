@@ -30,7 +30,9 @@ def cmd_update():
         capture_output=True, text=True,
     ).stdout.strip()
 
-    print(f"Checking for updates...")
+    from rich.console import Console
+    c = Console()
+    c.print("[dim]Checking for updates...[/dim]")
 
     # Fetch first to check if there are remote changes
     subprocess.run(["git", "-C", str(repo), "fetch"], capture_output=True)
@@ -47,8 +49,8 @@ def cmd_update():
             capture_output=True, text=True,
         )
         if result.returncode != 0:
-            print(result.stderr, end="")
-            print("Update failed. Try: git pull manually.")
+            c.print(f"[red]✘ Update failed.[/red] Try: git pull manually.")
+            c.print(f"[dim]{result.stderr.strip()}[/dim]")
             sys.exit(1)
 
         after = subprocess.run(
@@ -62,26 +64,27 @@ def cmd_update():
             capture_output=True, text=True,
         ).stdout.strip()
 
-        print(f"Updated: {before} → {after}")
+        c.print(f"[green]✔[/green] Updated: [dim]{before}[/dim] → [bold]{after}[/bold]")
         if log:
-            print(f"\nNew commits:")
+            c.print(f"\n[bold]New commits:[/bold]")
             for line in log.splitlines():
-                print(f"  {line}")
+                c.print(f"  [dim]•[/dim] {line}")
 
         # Reinstall package to pick up changes
         scripts = "Scripts" if os.name == "nt" else "bin"
         venv_pip = repo / ".venv" / scripts / "pip"
         pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
         subprocess.run([pip_cmd, "install", "-e", str(repo), "--quiet"])
-        print("\nUpdate complete! Restart sectool to use the new version.")
+        c.print(f"\n[bold green]✔ Update complete![/bold green] Restart sectool to use the new version.")
     else:
         from sectools.dashboard import VERSION
-        print(f"Already on the latest version (v{VERSION}, commit {before}).")
+        c.print(f"[green]✔[/green] Already on the latest version [dim](v{VERSION}, commit {before})[/dim]")
 
 
 def cmd_version():
+    from rich.console import Console
     from sectools.dashboard import VERSION
-    print(f"SecTools v{VERSION}")
+    Console().print(f"[bold cyan]SecTools[/bold cyan] [dim]v{VERSION}[/dim]")
 
 
 def cmd_hash():
@@ -216,25 +219,27 @@ def cmd_reinstall():
     """Reinstall SecTools: recreate venv, reinstall package, relink."""
     import shutil
 
+    from rich.console import Console
+    c = Console()
     repo = get_repo_dir()
-    print("Reinstalling SecTools...\n")
+    c.print("\n[bold cyan]Reinstalling SecTools...[/bold cyan]\n")
 
     # Remove old venv
     venv_dir = repo / ".venv"
     if venv_dir.exists():
         shutil.rmtree(venv_dir)
-        print("  Removed old virtual environment")
+        c.print("  [dim]✔[/dim] Removed old virtual environment")
 
     # Create new venv — use system python, not sys.executable (which may be the deleted venv python)
     import shutil as _shutil
     python_bin = _shutil.which("python3") or _shutil.which("python") or sys.executable
-    print("  Creating virtual environment...")
+    c.print("  [dim]⟳[/dim] Creating virtual environment...")
     subprocess.run([python_bin, "-m", "venv", str(venv_dir)], check=True)
 
     # Install package
     scripts = "Scripts" if os.name == "nt" else "bin"
     pip_path = venv_dir / scripts / "pip"
-    print("  Installing SecTools...")
+    c.print("  [dim]⟳[/dim] Installing SecTools...")
     subprocess.run([str(pip_path), "install", "-e", str(repo), "--quiet"], check=True)
 
     # Relink
@@ -245,37 +250,67 @@ def cmd_reinstall():
             try:
                 link.unlink(missing_ok=True)
                 link.symlink_to(sectool_bin)
-                print(f"  Linked: {link} → {sectool_bin}")
+                c.print(f"  [dim]✔[/dim] Linked: {link} → {sectool_bin}")
             except PermissionError:
-                print(f"  Could not link {link} — try: sudo ln -sf {sectool_bin} {link}")
+                c.print(f"  [red]✘[/red] Could not link {link} — try: sudo ln -sf {sectool_bin} {link}")
             break
 
-    print("\nReinstall complete! Run: sectool start")
+    c.print(f"\n[bold green]✔ Reinstall complete![/bold green] Run: [cyan]sectool start[/cyan]")
+
+
+def cmd_restart():
+    """Restart SecTools: re-exec the 'sectool start' process."""
+    from rich.console import Console
+    console = Console()
+    console.print("\n[bold cyan]↻[/bold cyan]  [bold]Restarting SecTools...[/bold]\n")
+    exe = sys.executable
+    os.execv(exe, [exe, "-m", "sectools.cli", "start"])
 
 
 def cmd_help():
     """Show help with all commands."""
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
     from sectools.dashboard import VERSION
-    print(f"\033[1m\033[36mSecTools\033[0m v{VERSION}")
-    print(f"\033[2mMade by Shepard Sotiroglou\033[0m")
-    print("")
-    print("Usage: sectool <command>")
-    print("")
-    print("Commands:")
-    print("  start       Launch the SecTools interactive menu")
-    print("  update      Pull latest changes from git and reinstall")
-    print("  reinstall   Clean reinstall (recreate venv and relink)")
-    print("  uninstall   Remove SecTools (venv, symlinks, optionally data)")
-    print("  version     Show version")
-    print("  status      Show installed tool status")
-    print("  hash        Identify a hash type: sectool hash <value>")
-    print("  encode      Quick encode: sectool encode <method> <text>")
-    print("  help        Show this help message")
+
+    console = Console()
+
+    console.print()
+    console.print(Panel.fit(
+        f"[bold cyan]SecTools[/bold cyan] [dim]v{VERSION}[/dim]\n[dim]Made by Shepard Sotiroglou[/dim]",
+        border_style="cyan",
+    ))
+
+    console.print(f"\n  [bold]Usage:[/bold] [cyan]sectool[/cyan] [dim]<command>[/dim]\n")
+
+    table = Table(show_header=False, box=None, padding=(0, 2), expand=False)
+    table.add_column("Command", style="bold cyan", min_width=12)
+    table.add_column("Description")
+
+    commands = [
+        ("start",     "Launch the interactive menu"),
+        ("restart",   "Restart SecTools"),
+        ("update",    "Pull latest changes and reinstall"),
+        ("reinstall", "Clean reinstall (recreate venv & relink)"),
+        ("uninstall", "Remove SecTools completely"),
+        ("version",   "Show version"),
+        ("status",    "Show installed tool status"),
+        ("hash",      "Identify a hash type — [dim]sectool hash <value>[/dim]"),
+        ("encode",    "Quick encode — [dim]sectool encode <method> <text>[/dim]"),
+        ("help",      "Show this help message"),
+    ]
+    for cmd, desc in commands:
+        table.add_row(cmd, desc)
+
+    console.print(table)
+    console.print()
 
 
 def main():
     commands = {
         "start": cmd_start,
+        "restart": cmd_restart,
         "update": cmd_update,
         "version": cmd_version,
         "hash": cmd_hash,

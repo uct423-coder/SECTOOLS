@@ -1,6 +1,7 @@
 import difflib
 from pathlib import Path
 from rich.console import Console
+from rich.panel import Panel
 from rich.text import Text
 from InquirerPy import inquirer
 from sectools.utils import LOGS_DIR
@@ -32,10 +33,15 @@ def diff_scans(console: Console):
     diff = list(difflib.unified_diff(a_lines, b_lines, fromfile=first, tofile=second))
 
     if not diff:
-        console.print("[green]No differences found.[/green]")
+        console.print("[green]✔ No differences found.[/green]")
         return
 
-    console.rule("[bold cyan]Diff[/bold cyan]")
+    # Count additions and deletions
+    adds = sum(1 for l in diff if l.startswith("+") and not l.startswith("+++"))
+    dels = sum(1 for l in diff if l.startswith("-") and not l.startswith("---"))
+
+    console.print(f"\n[bold cyan]━━━ Diff ━━━[/bold cyan]")
+    console.print(f"  [green]+{adds}[/green] [red]-{dels}[/red]\n")
     for line in diff:
         line = line.rstrip("\n")
         if line.startswith("+++") or line.startswith("---"):
@@ -45,6 +51,6 @@ def diff_scans(console: Console):
         elif line.startswith("-"):
             console.print(f"[red]{line}[/red]")
         elif line.startswith("@@"):
-            console.print(f"[cyan]{line}[/cyan]")
+            console.print(f"[bold cyan]{line}[/bold cyan]")
         else:
-            console.print(line)
+            console.print(f"[dim]{line}[/dim]")

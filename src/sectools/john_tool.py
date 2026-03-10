@@ -14,7 +14,7 @@ PRESETS = {
 
 
 def run(console: Console):
-    console.rule("[bold cyan]John the Ripper — Password Cracker[/bold cyan]")
+    console.print("\n[bold cyan]━━━ John the Ripper — Password Cracker ━━━[/bold cyan]\n")
 
     hashfile = inquirer.text(message="Hash file path:").execute().strip()
     if not hashfile:

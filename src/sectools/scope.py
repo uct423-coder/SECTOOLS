@@ -76,7 +76,7 @@ def _add_cidr(console: Console):
     if cidr not in scope["cidrs"]:
         scope["cidrs"].append(cidr)
         _save_scope(scope)
-    console.print(f"[green]Added {cidr} to scope.[/green]")
+    console.print(f"[green]✔ Added {cidr} to scope.[/green]")
 
 
 def _add_domain(console: Console):
@@ -87,14 +87,14 @@ def _add_domain(console: Console):
     if domain not in scope["domains"]:
         scope["domains"].append(domain)
         _save_scope(scope)
-    console.print(f"[green]Added {domain} to scope.[/green]")
+    console.print(f"[green]✔ Added {domain} to scope.[/green]")
 
 
 def _clear_scope(console: Console):
     confirm = inquirer.confirm(message="Clear all scope entries?", default=False).execute()
     if confirm:
         _save_scope({"cidrs": [], "domains": []})
-        console.print("[green]Scope cleared.[/green]")
+        console.print("[green]✔ Scope cleared.[/green]")
 
 
 def run(console: Console):

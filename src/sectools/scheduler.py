@@ -82,7 +82,7 @@ def schedule_scan(console: Console):
 
     SCHEDULED_TASKS.append(task)
     label = f"every {minutes} min" if repeat else f"in {minutes} min"
-    console.print(f"[green]Scheduled: {tool} — {label}[/green]")
+    console.print(f"[green]✔ Scheduled: {tool} — {label}[/green]")
 
 
 def view_scheduled(console: Console):
@@ -118,6 +118,6 @@ def view_scheduled(console: Console):
             task["cancelled"] = True
             if task.get("timer"):
                 task["timer"].cancel()
-            console.print("[green]Cancelled.[/green]")
+            console.print("[green]✔ Cancelled.[/green]")
         except (ValueError, IndexError):
             console.print("[red]Invalid selection.[/red]")

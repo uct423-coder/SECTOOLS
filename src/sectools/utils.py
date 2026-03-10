@@ -54,17 +54,17 @@ def check_installed(binary: str) -> bool:
 
 def show_tool_status(console: Console):
     """Display a table of all tools and their install status."""
-    table = Table(title="Tool Status", border_style="dim")
-    table.add_column("Tool", style="cyan")
+    table = Table(title="Tool Status", border_style="dim", show_lines=False)
+    table.add_column("", width=3, justify="center")
+    table.add_column("Tool", style="bold")
     table.add_column("Binary", style="dim")
-    table.add_column("Status")
 
     for tool, binary in TOOL_BINARIES.items():
         if check_installed(binary):
-            status = "[bold green]installed[/bold green]"
+            icon = "[green]✔[/green]"
         else:
-            status = "[bold red]missing[/bold red]"
-        table.add_row(tool, binary, status)
+            icon = "[red]✘[/red]"
+        table.add_row(icon, tool, binary)
 
     console.print(table)
     console.print()
@@ -104,8 +104,8 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
         import os
         env = {**os.environ, **proxy_env}
 
-    console.print(f"[dim]Running: {' '.join(cmd)}[/dim]")
-    console.print(f"[dim]Log: {log_file}[/dim]\n")
+    console.print(f"  [dim]→[/dim] [bold]{' '.join(cmd)}[/bold]")
+    console.print(f"  [dim]📄 {log_file}[/dim]\n")
 
     with open(log_file, "w") as f:
         f.write(f"# {tool_name} scan — {datetime.datetime.now().isoformat()}\n")
@@ -116,7 +116,7 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
             f.write(line)
         process.wait()
 
-    console.print(f"\n[green]Results saved to {log_file}[/green]")
+    console.print(f"\n  [bold green]✔[/bold green] Results saved to [cyan]{log_file}[/cyan]")
     from sectools.notifications import notify
     notify("SecTools", f"{tool_name} scan complete")
     return process
@@ -359,7 +359,7 @@ def generate_report(console: Console):
 
     report_file = LOGS_DIR / f"report_{timestamp}.html"
     report_file.write_text("\n".join(html))
-    console.print(f"[bold green]HTML report saved: {report_file}[/bold green]")
+    console.print(f"  [bold green]✔[/bold green] HTML report saved: [cyan]{report_file}[/cyan]")
 
     export = inquirer.select(
         message="Open as:",
@@ -408,4 +408,4 @@ def _export_pdf(console: Console, logs: list, timestamp: str):
 
     pdf_file = LOGS_DIR / f"report_{timestamp}.pdf"
     pdf.output(str(pdf_file))
-    console.print(f"[bold green]PDF saved: {pdf_file}[/bold green]")
+    console.print(f"  [bold green]✔[/bold green] PDF saved: [cyan]{pdf_file}[/cyan]")
