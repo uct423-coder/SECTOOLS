@@ -32,42 +32,65 @@ from sectools import osint, screenshot, cred_manager, scope, sessions
 
 console = Console()
 
+# ── ANSI color helpers ──────────────────────────────────────────────
+
+_CYAN = "\033[36m"
+_GREEN = "\033[32m"
+_RED = "\033[31m"
+_YELLOW = "\033[33m"
+_MAGENTA = "\033[35m"
+_BLUE = "\033[34m"
+_WHITE = "\033[97m"
+_DIM = "\033[2m"
+_BOLD = "\033[1m"
+_RESET = "\033[0m"
+
 # ── Category sub-menus ──────────────────────────────────────────────
 
 CATEGORIES = {
     "Recon & OSINT": [
-        ("Recon Autopilot", recon_tool.run),
-        ("Nmap — Network Scanner", nmap_tool.run),
-        ("Nikto — Web Server Scanner", nikto_tool.run),
-        ("Gobuster — Dir & DNS Brute Force", gobuster_tool.run),
-        ("OSINT — Subdomain & Recon", osint.run),
+        (f"{_CYAN}Recon Autopilot{_RESET}", recon_tool.run),
+        (f"{_CYAN}Nmap{_RESET} — Network Scanner", nmap_tool.run),
+        (f"{_CYAN}Nikto{_RESET} — Web Server Scanner", nikto_tool.run),
+        (f"{_CYAN}Gobuster{_RESET} — Dir & DNS Brute Force", gobuster_tool.run),
+        (f"{_CYAN}OSINT{_RESET} — Subdomain & Recon", osint.run),
     ],
     "Exploitation": [
-        ("Metasploit — Framework", msf_tool.run),
-        ("SQLMap — SQL Injection", sqlmap_tool.run),
-        ("Hydra — Brute Force", hydra_tool.run),
+        (f"{_RED}Metasploit{_RESET} — Framework", msf_tool.run),
+        (f"{_RED}SQLMap{_RESET} — SQL Injection", sqlmap_tool.run),
+        (f"{_RED}Hydra{_RESET} — Brute Force", hydra_tool.run),
     ],
     "Password Cracking": [
-        ("John the Ripper", john_tool.run),
-        ("Hashcat — GPU Cracker", hashcat_tool.run),
+        (f"{_YELLOW}John the Ripper{_RESET}", john_tool.run),
+        (f"{_YELLOW}Hashcat{_RESET} — GPU Cracker", hashcat_tool.run),
     ],
     "Networking & Web": [
-        ("Netcat — Network Swiss Army Knife", netcat_tool.run),
-        ("HTTP Probe — Quick URL Scanner", http_probe.run),
-        ("Screenshot — Capture Web Pages", screenshot.run),
-        ("Port Reference", port_ref.run),
-        ("Subnet Calculator", subnet_calc.run),
+        (f"{_GREEN}Netcat{_RESET} — Network Swiss Army Knife", netcat_tool.run),
+        (f"{_GREEN}HTTP Probe{_RESET} — Quick URL Scanner", http_probe.run),
+        (f"{_GREEN}Screenshot{_RESET} — Capture Web Pages", screenshot.run),
+        (f"{_GREEN}Port Reference{_RESET}", port_ref.run),
+        (f"{_GREEN}Subnet Calculator{_RESET}", subnet_calc.run),
     ],
     "Generators": [
-        ("Reverse Shell Generator", revshell.run),
-        ("Password Generator", passgen.run),
-        ("Encoding / Decoding", encoding.run),
+        (f"{_MAGENTA}Reverse Shell Generator{_RESET}", revshell.run),
+        (f"{_MAGENTA}Password Generator{_RESET}", passgen.run),
+        (f"{_MAGENTA}Encoding / Decoding{_RESET}", encoding.run),
     ],
     "Analysis": [
-        ("Hash Identifier", hash_id.run),
-        ("Scan History Browser", scan_history.run),
-        ("Diff Scans", lambda c: diff_scans(c)),
+        (f"{_BLUE}Hash Identifier{_RESET}", hash_id.run),
+        (f"{_BLUE}Scan History Browser{_RESET}", scan_history.run),
+        (f"{_BLUE}Diff Scans{_RESET}", lambda c: diff_scans(c)),
     ],
+}
+
+# Color mapping for category labels in main menu
+_CAT_COLORS = {
+    "Recon & OSINT": _CYAN,
+    "Exploitation": _RED,
+    "Password Cracking": _YELLOW,
+    "Networking & Web": _GREEN,
+    "Generators": _MAGENTA,
+    "Analysis": _BLUE,
 }
 
 # Flat lookup for favorites
@@ -82,7 +105,7 @@ for _cat, _tools in CATEGORIES.items():
 def _run_category(console: Console, category: str):
     """Show a sub-menu for a tool category."""
     tools = CATEGORIES[category]
-    choices = [t[0] for t in tools] + ["Back"]
+    choices = [t[0] for t in tools] + [f"{_DIM}Back{_RESET}"]
 
     while True:
         choice = inquirer.select(
@@ -91,7 +114,7 @@ def _run_category(console: Console, category: str):
             pointer="❯",
         ).execute()
 
-        if choice == "Back":
+        if _strip_ansi(choice) == "Back":
             return
 
         handler = dict(tools)[choice]
@@ -122,19 +145,20 @@ def _build_menu_choices() -> list:
     # Tool categories
     choices.append(Separator("── Tools ──"))
     for cat in CATEGORIES:
+        color = _CAT_COLORS.get(cat, "")
         count = len(CATEGORIES[cat])
-        choices.append(f"{cat}  ({count})")
+        choices.append(f"{color}{cat}{_RESET}  {_DIM}({count}){_RESET}")
 
     # Other
     choices.append(Separator("──────────"))
     choices.extend([
-        "Management",
-        "Generate Report",
-        "Cheat Sheets",
-        "Settings",
-        "Manage Favorites",
-        "Clear Screen",
-        "Exit",
+        f"{_WHITE}Management{_RESET}",
+        f"{_GREEN}Generate Report{_RESET}",
+        f"{_CYAN}Cheat Sheets{_RESET}",
+        f"{_YELLOW}Settings{_RESET}",
+        f"{_MAGENTA}Manage Favorites{_RESET}",
+        f"{_DIM}Clear Screen{_RESET}",
+        f"{_RED}Exit{_RESET}",
     ])
 
     return choices
@@ -166,24 +190,25 @@ def _management_submenu(console: Console):
         choice = inquirer.select(
             message="Management:",
             choices=[
-                "Targets & Groups",
-                "Scans & Profiles",
-                "Security",
-                "System",
-                "Back",
+                f"{_CYAN}Targets & Groups{_RESET}",
+                f"{_BLUE}Scans & Profiles{_RESET}",
+                f"{_RED}Security{_RESET}",
+                f"{_YELLOW}System{_RESET}",
+                f"{_DIM}Back{_RESET}",
             ],
             pointer="❯",
         ).execute()
 
-        if choice == "Back":
+        clean = _strip_ansi(choice)
+        if clean == "Back":
             return
-        elif choice == "Targets & Groups":
+        elif clean == "Targets & Groups":
             _targets_submenu(console)
-        elif choice == "Scans & Profiles":
+        elif clean == "Scans & Profiles":
             _scans_submenu(console)
-        elif choice == "Security":
+        elif clean == "Security":
             _security_submenu(console)
-        elif choice == "System":
+        elif clean == "System":
             _system_submenu(console)
         console.print()
 
@@ -194,12 +219,18 @@ def _targets_submenu(console: Console):
     while True:
         choice = inquirer.select(
             message="Targets & Groups:",
-            choices=["View Saved Targets", "Edit Target Notes", "Target Groups", "Back"],
+            choices=[
+                f"{_CYAN}View Saved Targets{_RESET}",
+                f"{_CYAN}Edit Target Notes{_RESET}",
+                f"{_CYAN}Target Groups{_RESET}",
+                f"{_DIM}Back{_RESET}",
+            ],
             pointer="❯",
         ).execute()
-        if choice == "Back":
+        clean = _strip_ansi(choice)
+        if clean == "Back":
             return
-        elif choice == "View Saved Targets":
+        elif clean == "View Saved Targets":
             entries = load_targets_with_notes()
             if not entries:
                 console.print("[yellow]No saved targets yet.[/yellow]")
@@ -210,9 +241,9 @@ def _targets_submenu(console: Console):
                     group = f" [magenta][{e.get('group', '')}][/magenta]" if e.get("group") else ""
                     console.print(f"  [{theme}]{i}.[/{theme}] {e['target']}{group}{note}")
                 console.print(f"\n[dim]Stored in {TARGETS_FILE}[/dim]")
-        elif choice == "Edit Target Notes":
+        elif clean == "Edit Target Notes":
             edit_target_notes(console)
-        elif choice == "Target Groups":
+        elif clean == "Target Groups":
             target_groups.run(console)
         console.print()
 
@@ -221,18 +252,25 @@ def _scans_submenu(console: Console):
     while True:
         choice = inquirer.select(
             message="Scans & Profiles:",
-            choices=["Scan Profiles", "Wordlist Manager", "Schedule a Scan", "View Scheduled Scans", "Back"],
+            choices=[
+                f"{_BLUE}Scan Profiles{_RESET}",
+                f"{_BLUE}Wordlist Manager{_RESET}",
+                f"{_BLUE}Schedule a Scan{_RESET}",
+                f"{_BLUE}View Scheduled Scans{_RESET}",
+                f"{_DIM}Back{_RESET}",
+            ],
             pointer="❯",
         ).execute()
-        if choice == "Back":
+        clean = _strip_ansi(choice)
+        if clean == "Back":
             return
-        elif choice == "Scan Profiles":
+        elif clean == "Scan Profiles":
             scan_profiles.run(console)
-        elif choice == "Wordlist Manager":
+        elif clean == "Wordlist Manager":
             wordlist_mgr.run(console)
-        elif choice == "Schedule a Scan":
+        elif clean == "Schedule a Scan":
             schedule_scan(console)
-        elif choice == "View Scheduled Scans":
+        elif clean == "View Scheduled Scans":
             view_scheduled(console)
         console.print()
 
@@ -241,16 +279,22 @@ def _security_submenu(console: Console):
     while True:
         choice = inquirer.select(
             message="Security:",
-            choices=["Scope Manager", "Credential Manager", "Sessions", "Back"],
+            choices=[
+                f"{_RED}Scope Manager{_RESET}",
+                f"{_RED}Credential Manager{_RESET}",
+                f"{_RED}Sessions{_RESET}",
+                f"{_DIM}Back{_RESET}",
+            ],
             pointer="❯",
         ).execute()
-        if choice == "Back":
+        clean = _strip_ansi(choice)
+        if clean == "Back":
             return
-        elif choice == "Scope Manager":
+        elif clean == "Scope Manager":
             scope.run(console)
-        elif choice == "Credential Manager":
+        elif clean == "Credential Manager":
             cred_manager.run(console)
-        elif choice == "Sessions":
+        elif clean == "Sessions":
             sessions.run(console)
         console.print()
 
@@ -259,16 +303,22 @@ def _system_submenu(console: Console):
     while True:
         choice = inquirer.select(
             message="System:",
-            choices=["Tool Status", "Install Missing Tools", "Plugins", "Back"],
+            choices=[
+                f"{_YELLOW}Tool Status{_RESET}",
+                f"{_YELLOW}Install Missing Tools{_RESET}",
+                f"{_YELLOW}Plugins{_RESET}",
+                f"{_DIM}Back{_RESET}",
+            ],
             pointer="❯",
         ).execute()
-        if choice == "Back":
+        clean = _strip_ansi(choice)
+        if clean == "Back":
             return
-        elif choice == "Tool Status":
+        elif clean == "Tool Status":
             show_tool_status(console)
-        elif choice == "Install Missing Tools":
+        elif clean == "Install Missing Tools":
             auto_installer.run(console)
-        elif choice == "Plugins":
+        elif clean == "Plugins":
             plugins_menu(console)
         console.print()
 
@@ -309,6 +359,12 @@ def _manage_favorites(console: Console):
     save_config(config)
 
 
+def _strip_ansi(s: str) -> str:
+    """Remove ANSI escape codes from a string."""
+    import re
+    return re.sub(r'\033\[[0-9;]*m', '', s)
+
+
 def main():
     os.system("clear" if os.name != "nt" else "cls")
     _auto_cleanup(console)
@@ -325,20 +381,25 @@ def main():
         except (KeyboardInterrupt, EOFError):
             break
 
-        if choice == "Exit":
+        clean = _strip_ansi(choice)
+
+        if clean.startswith("Exit"):
             console.print("[bold green]Goodbye![/bold green]")
             break
-        elif choice == "Clear Screen":
+        elif clean.startswith("Clear Screen"):
             os.system("clear" if os.name != "nt" else "cls")
             show_dashboard(console)
             continue
 
         # Tool categories
+        matched = False
         for cat in CATEGORIES:
-            if choice.startswith(cat):
+            if clean.startswith(cat):
                 _run_category(console, cat)
+                matched = True
                 break
-        else:
+
+        if not matched:
             # Favorites (direct tool launch)
             if choice in HANDLERS:
                 try:
@@ -349,15 +410,15 @@ def main():
                     tool_name = e.filename or "unknown"
                     console.print(f"\n[red]{tool_name} is not installed.[/red]")
                     console.print(f"[yellow]Install it with: brew install {tool_name}[/yellow]")
-            elif choice == "Management":
+            elif clean.startswith("Management"):
                 _management_submenu(console)
-            elif choice == "Generate Report":
+            elif clean.startswith("Generate Report"):
                 generate_report(console)
-            elif choice == "Cheat Sheets":
+            elif clean.startswith("Cheat Sheets"):
                 cheatsheet_menu(console)
-            elif choice == "Settings":
+            elif clean.startswith("Settings"):
                 config_menu(console)
-            elif choice == "Manage Favorites":
+            elif clean.startswith("Manage Favorites"):
                 _manage_favorites(console)
 
         console.print()
