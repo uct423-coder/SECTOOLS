@@ -27,7 +27,7 @@ from sectools import (
     scan_history, wordlist_mgr, target_groups,
     scan_profiles, auto_installer,
 )
-from sectools import osint, screenshot, cred_manager, scope, sessions
+from sectools import osint, screenshot, cred_manager, scope, sessions, assessment
 from sectools import workflows
 from sectools.proxy import proxy_menu
 from sectools.onboarding import needs_onboarding, run_onboarding
@@ -43,6 +43,7 @@ CATEGORIES = {
         ("Nikto — Web Server Scanner", nikto_tool.run),
         ("Gobuster — Dir & DNS Brute Force", gobuster_tool.run),
         ("OSINT — Subdomain & Recon", osint.run),
+        ("Security Assessment Wizard", assessment.run),
     ],
     "Exploitation": [
         ("Metasploit — Framework", msf_tool.run),
@@ -95,6 +96,7 @@ SHORTCUTS = {
     "t": "Netcat — Network Swiss Army Knife",
     "p": "HTTP Probe — Quick URL Scanner",
     "w": "Screenshot — Capture Web Pages",
+    "a": "Security Assessment Wizard",
 }
 
 
