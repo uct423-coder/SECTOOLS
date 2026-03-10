@@ -23,7 +23,7 @@ echo.
 timeout /t 1 >nul 2>nul
 
 :: ── Step 1: Python ──
-echo [1m[1/8] Checking Python...[0m
+echo [1m[1/7] Checking Python...[0m
 where python >nul 2>nul
 if %errorlevel% neq 0 (
     echo   [31m[!][0m Python not found.
@@ -36,7 +36,7 @@ for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo   [32m[+][0m %%v
 echo.
 
 :: ── Step 2: Chocolatey ──
-echo [1m[2/8] Checking package manager...[0m
+echo [1m[2/7] Checking package manager...[0m
 where choco >nul 2>nul
 if %errorlevel% neq 0 (
     echo   [36m[*][0m Chocolatey not found. Installing...
@@ -53,7 +53,7 @@ if %errorlevel% neq 0 (
 echo.
 
 :: ── Step 3: Security tools ──
-echo [1m[3/8] Installing security tools...[0m
+echo [1m[3/7] Installing security tools...[0m
 
 call :install_tool nmap nmap
 call :install_tool sqlmap sqlmap
@@ -71,7 +71,7 @@ echo   [90m  - John:       https://www.openwall.com/john/[0m
 echo.
 
 :: ── Step 4: Virtual environment ──
-echo [1m[4/8] Setting up environment...[0m
+echo [1m[4/7] Setting up environment...[0m
 if not exist "%~dp0.venv" (
     python -m venv "%~dp0.venv"
     echo   [32m[+][0m Virtual environment created
@@ -81,13 +81,13 @@ if not exist "%~dp0.venv" (
 echo.
 
 :: ── Step 5: Install package ──
-echo [1m[5/8] Installing SecTools package...[0m
+echo [1m[5/7] Installing SecTools package...[0m
 "%~dp0.venv\Scripts\pip.exe" install -e "%~dp0" --quiet
 echo   [32m[+][0m SecTools installed
 echo.
 
 :: ── Step 6: Wordlists ──
-echo [1m[6/8] Setting up wordlists...[0m
+echo [1m[6/7] Setting up wordlists...[0m
 set "WORDLISTS_DIR=%USERPROFILE%\.sectools-wordlists"
 if not exist "%WORDLISTS_DIR%" mkdir "%WORDLISTS_DIR%"
 if exist "%~dp0wordlists" (
@@ -98,29 +98,8 @@ if exist "%~dp0wordlists" (
 )
 echo.
 
-:: ── Step 7: Default config ──
-echo [1m[7/8] Setting up default config...[0m
-set "CONFIG_FILE=%USERPROFILE%\.sectools-config.json"
-if not exist "%CONFIG_FILE%" (
-    (
-        echo {
-        echo   "default_wordlist": "rockyou.txt",
-        echo   "default_dirwordlist": "%WORDLISTS_DIR:\=\\%\\common.txt",
-        echo   "notifications_enabled": true,
-        echo   "theme_color": "cyan",
-        echo   "log_retention_days": 30,
-        echo   "auto_save_targets": false,
-        echo   "favorites": []
-        echo }
-    ) > "%CONFIG_FILE%"
-    echo   [32m[+][0m Config created with wordlist paths
-) else (
-    echo   [32m[+][0m Config already exists
-)
-echo.
-
-:: ── Step 8: Global command ──
-echo [1m[8/8] Setting up global command...[0m
+:: ── Step 7: Global command ──
+echo [1m[7/7] Setting up global command...[0m
 (
     echo @echo off
     echo "%~dp0.venv\Scripts\sectool.exe" %%*
