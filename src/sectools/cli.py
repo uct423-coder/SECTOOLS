@@ -6,11 +6,13 @@ from pathlib import Path
 
 def get_repo_dir() -> Path:
     """Get the git repo root for the installed package."""
-    d = Path(__file__).resolve().parent
-    while d != d.parent:
-        if (d / ".git").exists():
-            return d
-        d = d.parent
+    # Try without resolving symlinks first (avoids nested symlink paths)
+    for start in [Path(__file__).parent, Path(__file__).resolve().parent]:
+        d = start
+        while d != d.parent:
+            if (d / ".git").exists():
+                return d
+            d = d.parent
     return Path.cwd()
 
 
@@ -67,7 +69,8 @@ def cmd_update():
                 print(f"  {line}")
 
         # Reinstall package to pick up changes
-        venv_pip = repo / ".venv" / "bin" / "pip"
+        scripts = "Scripts" if os.name == "nt" else "bin"
+        venv_pip = repo / ".venv" / scripts / "pip"
         pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
         subprocess.run([pip_cmd, "install", "-e", str(repo), "--quiet"])
         print("\nUpdate complete! Restart sectool to use the new version.")
@@ -195,17 +198,20 @@ def cmd_reinstall():
         shutil.rmtree(venv_dir)
         print("  Removed old virtual environment")
 
-    # Create new venv
+    # Create new venv — use system python, not sys.executable (which may be the deleted venv python)
+    import shutil as _shutil
+    python_bin = _shutil.which("python3") or _shutil.which("python") or sys.executable
     print("  Creating virtual environment...")
-    subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+    subprocess.run([python_bin, "-m", "venv", str(venv_dir)], check=True)
 
     # Install package
-    pip_path = venv_dir / "bin" / "pip"
+    scripts = "Scripts" if os.name == "nt" else "bin"
+    pip_path = venv_dir / scripts / "pip"
     print("  Installing SecTools...")
     subprocess.run([str(pip_path), "install", "-e", str(repo), "--quiet"], check=True)
 
     # Relink
-    sectool_bin = venv_dir / "bin" / "sectool"
+    sectool_bin = venv_dir / scripts / "sectool"
     for bin_dir in [Path("/opt/homebrew/bin"), Path("/usr/local/bin")]:
         if bin_dir.exists():
             link = bin_dir / "sectool"
