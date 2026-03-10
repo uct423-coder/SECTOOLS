@@ -8,7 +8,7 @@ from InquirerPy import inquirer
 CONFIG_PATH = Path.home() / ".sectools-config.json"
 
 DEFAULT_CONFIG = {
-    "default_wordlist": "rockyou.txt" if os.name == "nt" else "/usr/share/wordlists/rockyou.txt",
+    "default_wordlist": str(Path.home() / ".sectools-wordlists" / "default-passwords.txt"),
     "default_dirwordlist": str(Path.home() / ".sectools-wordlists" / "common.txt"),
     "notifications_enabled": True,
     "theme_color": "cyan",

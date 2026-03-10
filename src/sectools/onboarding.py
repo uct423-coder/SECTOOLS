@@ -35,25 +35,13 @@ def run_onboarding(console: Console):
         pointer="❯",
     ).execute()
 
-    # 2. Password wordlist
-    config["default_wordlist"] = inquirer.text(
-        message="Password wordlist path:",
-        default=config["default_wordlist"],
-    ).execute().strip()
-
-    # 3. Directory wordlist
-    config["default_dirwordlist"] = inquirer.text(
-        message="Directory wordlist path (for Gobuster):",
-        default=config["default_dirwordlist"],
-    ).execute().strip()
-
-    # 4. Notifications
+    # 2. Notifications
     config["notifications_enabled"] = inquirer.confirm(
         message="Enable desktop notifications?",
         default=True,
     ).execute()
 
-    # 5. Log retention
+    # 3. Log retention
     retention = inquirer.number(
         message="Auto-delete logs older than (days):",
         default=30,
@@ -61,7 +49,7 @@ def run_onboarding(console: Console):
     ).execute()
     config["log_retention_days"] = int(retention)
 
-    # 6. Scope
+    # 4. Scope
     setup_scope = inquirer.confirm(
         message="Define an engagement scope now?",
         default=False,
