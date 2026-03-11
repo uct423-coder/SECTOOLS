@@ -266,6 +266,16 @@ def _run_assessment(console: Console, config: dict) -> dict:
         summary_tbl.add_row(scan_name, st, str(data["findings"]), f"{data['duration']}s")
 
     console.print(summary_tbl)
+
+    # Per-scan smart summaries
+    from sectools.utils import _show_scan_summary
+    for scan_name, data in results["scans"].items():
+        if data["status"] != "ok" or not data["output"]:
+            continue
+        # Map scan name to tool key for the parser
+        tool_key = scan_name.lower().split()[0]  # "http", "osint", "nmap", "nikto", "gobuster", "sqlmap", "hydra"
+        _show_scan_summary(console, tool_key, data["output"])
+
     console.print()
 
     # Save raw log

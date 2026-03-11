@@ -4,7 +4,7 @@ from pathlib import Path
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-from sectools.utils import extract_hostname, LOGS_DIR, save_target, WORDLISTS_DIR
+from sectools.utils import extract_hostname, LOGS_DIR, save_target, WORDLISTS_DIR, _show_scan_summary
 
 
 RECON_SCANS = {
@@ -104,11 +104,9 @@ def run(console: Console):
 
     console.print(f"  [bold green]✔ Recon complete![/bold green] Log: [cyan]{log_file}[/cyan]\n")
 
-    # Print summary
-    console.print("[bold cyan]━━━ Summary ━━━[/bold cyan]")
+    # Per-tool smart summaries
+    console.rule("[bold cyan]Recon Summary[/bold cyan]", style="cyan")
     for name, output in results.items():
-        console.print(f"\n  [bold]{name}[/bold]")
-        lines = output.strip().splitlines()
-        interesting = [l for l in lines if l.strip() and not l.startswith("#")]
-        for line in interesting[-10:]:
-            console.print(f"    [dim]│[/dim] {line}")
+        # Determine tool name for the summary parser
+        tool_key = name.lower().split()[0]  # "nmap", "nikto", "gobuster", "sqlmap"
+        _show_scan_summary(console, tool_key, output)

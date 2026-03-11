@@ -306,6 +306,58 @@ def _show_scan_summary(console: Console, tool_name: str, output: str):
             for c in cracked[:10]:
                 summary_items.append(f"  [green]>[/green] {c[:80]}")
 
+    # ── HTTP Probe (assessment) ───────────────────────────────────
+    elif "http" in tool:
+        status_code = None
+        headers_missing = []
+        server_info = None
+        ssl_subject = None
+        redirect_count = 0
+        for line in content_lines:
+            if line.startswith("Status:"):
+                status_code = line.split("Status:")[-1].strip()
+            if "Missing" in line and "]" in line:
+                m = _re.match(r'\s*\[(\w+)\]\s+(.+?):\s+(.+)', line)
+                if m:
+                    headers_missing.append((m.group(2), m.group(1)))
+            if "Server version disclosed" in line:
+                server_info = line.split(":")[-1].strip()
+            if line.strip().startswith("Subject:"):
+                ssl_subject = line.split("Subject:")[-1].strip()
+            if "->" in line and _re.match(r'^\s*\d{3}\s', line.strip()):
+                redirect_count += 1
+
+        if status_code:
+            color = "green" if status_code.startswith("2") else "yellow" if status_code.startswith("3") else "red"
+            summary_items.append(f"[bold]Status:[/bold] [{color}]{status_code}[/{color}]")
+        if redirect_count:
+            summary_items.append(f"[bold]Redirects:[/bold] {redirect_count}")
+        if server_info:
+            summary_items.append(f"[bold]Server:[/bold] [yellow]{server_info}[/yellow]")
+        if ssl_subject:
+            summary_items.append(f"[bold]SSL:[/bold] {ssl_subject}")
+        if headers_missing:
+            summary_items.append(f"[bold]Missing security headers:[/bold] [yellow]{len(headers_missing)}[/yellow]")
+            for header, severity in headers_missing[:8]:
+                color = "red" if severity == "High" else "yellow" if severity == "Medium" else "dim"
+                summary_items.append(f"  [{color}][{severity}][/{color}] {header}")
+
+    # ── OSINT ─────────────────────────────────────────────────────
+    elif "osint" in tool:
+        subdomains = []
+        for line in content_lines:
+            stripped = line.strip()
+            if stripped and "." in stripped and not stripped.startswith(("Subdomain", "#", "[", "crt")):
+                subdomains.append(stripped)
+        count_match = _re.search(r'Subdomains found:\s*(\d+)', output)
+        count = int(count_match.group(1)) if count_match else len(subdomains)
+        summary_items.append(f"[bold]Subdomains found:[/bold] [cyan]{count}[/cyan]")
+        if subdomains:
+            for s in subdomains[:10]:
+                summary_items.append(f"  [cyan]>[/cyan] {s}")
+            if count > 10:
+                summary_items.append(f"  [dim]... and {count - 10} more[/dim]")
+
     # ── Generic fallback ──────────────────────────────────────────
     else:
         total_lines = len(content_lines)
