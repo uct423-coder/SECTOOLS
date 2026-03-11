@@ -45,6 +45,18 @@ TOOL_BINARIES = {
     "John the Ripper": "john",
     "Hashcat": "hashcat",
     "Netcat": "nc",
+    "WPScan": "wpscan",
+    "Ffuf": "ffuf",
+    "Nuclei": "nuclei",
+    "Enum4Linux": "enum4linux",
+    "WhatWeb": "whatweb",
+    "Masscan": "masscan",
+    "Subfinder": "subfinder",
+    "Wafw00f": "wafw00f",
+    "Dirb": "dirb",
+    "SSLScan": "sslscan",
+    "Dig": "dig",
+    "Whois": "whois",
 }
 
 
@@ -357,6 +369,238 @@ def _show_scan_summary(console: Console, tool_name: str, output: str):
                 summary_items.append(f"  [cyan]>[/cyan] {s}")
             if count > 10:
                 summary_items.append(f"  [dim]... and {count - 10} more[/dim]")
+
+    # ── WPScan ────────────────────────────────────────────────────
+    elif "wpscan" in tool:
+        info_lines = []
+        warning_lines = []
+        wp_version = None
+        theme = None
+        plugins = []
+        for line in content_lines:
+            stripped = line.strip()
+            if stripped.startswith("[+]"):
+                info_lines.append(stripped)
+                if "WordPress version" in stripped:
+                    wp_version = stripped.split("WordPress version")[-1].strip().rstrip(".")
+                elif "WordPress theme" in stripped or "Theme:" in stripped:
+                    theme = stripped.split("[+]")[-1].strip()
+                elif "plugin" in stripped.lower():
+                    plugins.append(stripped.split("[+]")[-1].strip())
+            elif stripped.startswith("[!]"):
+                warning_lines.append(stripped)
+
+        vuln_count = len(warning_lines)
+        summary_items.append(f"[bold]Informational:[/bold] [cyan]{len(info_lines)}[/cyan]")
+        summary_items.append(f"[bold red]Warnings/Vulns:[/bold red] [red]{vuln_count}[/red]")
+        if wp_version:
+            summary_items.append(f"[bold]WordPress version:[/bold] {wp_version}")
+        if theme:
+            summary_items.append(f"[bold]Theme:[/bold] {theme}")
+        if plugins:
+            summary_items.append(f"[bold]Plugins:[/bold] [cyan]{len(plugins)}[/cyan]")
+            for p in plugins[:10]:
+                summary_items.append(f"  [cyan]>[/cyan] {p[:100]}")
+
+        if warning_lines:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("#", style="dim", width=4, justify="right")
+            details_table.add_column("Warning", style="red")
+            for i, w in enumerate(warning_lines[:15], 1):
+                details_table.add_row(str(i), w[:120])
+            if len(warning_lines) > 15:
+                summary_items.append(f"[dim]... and {len(warning_lines) - 15} more warnings[/dim]")
+
+    # ── Nuclei ────────────────────────────────────────────────────
+    elif "nuclei" in tool:
+        severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+        findings = []
+        for line in content_lines:
+            lower = line.lower()
+            for sev in severity_counts:
+                if f"[{sev}]" in lower:
+                    severity_counts[sev] += 1
+                    findings.append((sev, line.strip()))
+                    break
+
+        for sev in ("critical", "high", "medium", "low", "info"):
+            count = severity_counts[sev]
+            if count > 0:
+                color = "red" if sev in ("critical", "high") else "yellow" if sev == "medium" else "cyan" if sev == "low" else "dim"
+                summary_items.append(f"[bold][{color}]{sev.upper()}: {count}[/{color}][/bold]")
+
+        total = sum(severity_counts.values())
+        summary_items.insert(0, f"[bold]Total findings:[/bold] [cyan]{total}[/cyan]")
+
+        if findings:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("Severity", style="bold", width=10)
+            details_table.add_column("Finding", style="white")
+            for sev, finding in findings[:20]:
+                color = "red" if sev in ("critical", "high") else "yellow" if sev == "medium" else "cyan"
+                details_table.add_row(f"[{color}]{sev.upper()}[/{color}]", finding[:120])
+            if len(findings) > 20:
+                summary_items.append(f"[dim]... and {len(findings) - 20} more findings[/dim]")
+
+    # ── Ffuf ──────────────────────────────────────────────────────
+    elif "ffuf" in tool:
+        discovered = []
+        for line in content_lines:
+            # ffuf output: URL [Status: 200, Size: 1234, Words: 56, Lines: 12]
+            m = _re.match(r'^(\S+)\s+\[Status:\s*(\d+)', line.strip())
+            if m:
+                discovered.append((m.group(1), m.group(2)))
+
+        summary_items.append(f"[bold]URLs found:[/bold] [cyan]{len(discovered)}[/cyan]")
+
+        if discovered:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("URL", style="cyan")
+            details_table.add_column("Status", style="green", justify="right")
+            for url, status in discovered[:20]:
+                color = "green" if status.startswith("2") else "yellow" if status.startswith("3") else "red"
+                details_table.add_row(url[:80], f"[{color}]{status}[/{color}]")
+            if len(discovered) > 20:
+                summary_items.append(f"[dim]... and {len(discovered) - 20} more URLs[/dim]")
+
+    # ── Masscan ───────────────────────────────────────────────────
+    elif "masscan" in tool:
+        open_ports = []
+        for line in content_lines:
+            m = _re.match(r'Discovered open port (\d+/\w+) on (\S+)', line.strip())
+            if m:
+                open_ports.append((m.group(1), m.group(2)))
+
+        summary_items.append(f"[bold]Open ports discovered:[/bold] [cyan]{len(open_ports)}[/cyan]")
+
+        if open_ports:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("Port", style="cyan", justify="right")
+            details_table.add_column("Host", style="white")
+            for port, host in open_ports[:20]:
+                details_table.add_row(port, host)
+            if len(open_ports) > 20:
+                summary_items.append(f"[dim]... and {len(open_ports) - 20} more ports[/dim]")
+
+    # ── Subfinder ─────────────────────────────────────────────────
+    elif "subfinder" in tool:
+        subdomains = []
+        for line in content_lines:
+            stripped = line.strip()
+            if stripped and "." in stripped and not stripped.startswith(("[", "#")):
+                subdomains.append(stripped)
+
+        summary_items.append(f"[bold]Subdomains found:[/bold] [cyan]{len(subdomains)}[/cyan]")
+        if subdomains:
+            for s in subdomains[:15]:
+                summary_items.append(f"  [cyan]>[/cyan] {s}")
+            if len(subdomains) > 15:
+                summary_items.append(f"  [dim]... and {len(subdomains) - 15} more[/dim]")
+
+    # ── SSLScan ───────────────────────────────────────────────────
+    elif "sslscan" in tool:
+        protocols = []
+        weak_ciphers = []
+        cert_info = []
+        for line in content_lines:
+            stripped = line.strip()
+            if _re.match(r'^(SSLv|TLSv)', stripped):
+                protocols.append(stripped)
+            if "weak" in stripped.lower() or "insecure" in stripped.lower():
+                weak_ciphers.append(stripped)
+            if stripped.startswith("Subject:") or stripped.startswith("Issuer:") or stripped.startswith("Not valid"):
+                cert_info.append(stripped)
+
+        if protocols:
+            summary_items.append(f"[bold]Supported protocols:[/bold] [cyan]{len(protocols)}[/cyan]")
+            for p in protocols[:10]:
+                summary_items.append(f"  [cyan]>[/cyan] {p[:100]}")
+        if cert_info:
+            summary_items.append("[bold]Certificate:[/bold]")
+            for c in cert_info[:5]:
+                summary_items.append(f"  [dim]│[/dim] {c[:100]}")
+        if weak_ciphers:
+            summary_items.append(f"[bold red]Weak ciphers:[/bold red] [red]{len(weak_ciphers)}[/red]")
+            for w in weak_ciphers[:5]:
+                summary_items.append(f"  [red]>[/red] {w[:100]}")
+
+    # ── WhatWeb ───────────────────────────────────────────────────
+    elif "whatweb" in tool:
+        technologies = []
+        for line in content_lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith(("#", "[")):
+                # WhatWeb output has comma-separated tech detections
+                technologies.append(stripped)
+
+        summary_items.append(f"[bold]Detected technologies:[/bold] [cyan]{len(technologies)}[/cyan]")
+        for t in technologies[:15]:
+            summary_items.append(f"  [cyan]>[/cyan] {t[:120]}")
+        if len(technologies) > 15:
+            summary_items.append(f"[dim]... and {len(technologies) - 15} more[/dim]")
+
+    # ── Enum4Linux ────────────────────────────────────────────────
+    elif "enum4linux" in tool:
+        users = []
+        shares = []
+        groups = []
+        for line in content_lines:
+            stripped = line.strip()
+            if "user:" in stripped.lower():
+                users.append(stripped)
+            elif "share" in stripped.lower() and ("disk" in stripped.lower() or "ipc" in stripped.lower() or "\\\\" in stripped):
+                shares.append(stripped)
+            elif "group:" in stripped.lower():
+                groups.append(stripped)
+
+        summary_items.append(f"[bold]Users found:[/bold] [cyan]{len(users)}[/cyan]")
+        summary_items.append(f"[bold]Shares found:[/bold] [cyan]{len(shares)}[/cyan]")
+        summary_items.append(f"[bold]Groups found:[/bold] [cyan]{len(groups)}[/cyan]")
+
+        if users:
+            for u in users[:10]:
+                summary_items.append(f"  [green]>[/green] {u[:100]}")
+            if len(users) > 10:
+                summary_items.append(f"[dim]... and {len(users) - 10} more users[/dim]")
+        if shares:
+            for s in shares[:10]:
+                summary_items.append(f"  [cyan]>[/cyan] {s[:100]}")
+
+    # ── Wafw00f ───────────────────────────────────────────────────
+    elif "wafw00f" in tool:
+        detected_waf = None
+        for line in content_lines:
+            stripped = line.strip()
+            if "is behind" in stripped.lower():
+                detected_waf = stripped
+            elif "no waf" in stripped.lower():
+                detected_waf = stripped
+
+        if detected_waf:
+            summary_items.append(f"[bold]Result:[/bold] {detected_waf}")
+        else:
+            summary_items.append("[bold]WAF detection:[/bold] [dim]No conclusive result[/dim]")
+
+    # ── Dirb ──────────────────────────────────────────────────────
+    elif "dirb" in tool:
+        discovered = []
+        for line in content_lines:
+            # Dirb output: + http://target/path (CODE:200)
+            m = _re.match(r'^\+\s+(\S+)\s+\(CODE:(\d+)\)', line.strip())
+            if m:
+                discovered.append((m.group(1), m.group(2)))
+
+        summary_items.append(f"[bold]Directories found:[/bold] [cyan]{len(discovered)}[/cyan]")
+
+        if discovered:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("URL", style="cyan")
+            details_table.add_column("Status", style="green", justify="right")
+            for url, status in discovered[:20]:
+                color = "green" if status.startswith("2") else "yellow" if status.startswith("3") else "red"
+                details_table.add_row(url[:80], f"[{color}]{status}[/{color}]")
+            if len(discovered) > 20:
+                summary_items.append(f"[dim]... and {len(discovered) - 20} more directories[/dim]")
 
     # ── Generic fallback ──────────────────────────────────────────
     else:

@@ -12,7 +12,7 @@ from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installe
 from sectools.config import load_config
 from sectools.tips import get_tip
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 
 BANNER_LINES = [
     "   ____            _____           _",

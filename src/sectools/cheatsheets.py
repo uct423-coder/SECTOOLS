@@ -270,6 +270,291 @@ SHEETS = {
   • Results are combined into a single timestamped log
   • Each scan has a 5-minute timeout
   • Skips tools that aren't installed""",
+
+    "wpscan": """[bold cyan]WPScan Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  wpscan --url URL           Scan a WordPress site
+  --enumerate p              Enumerate plugins
+  --enumerate u              Enumerate users
+  --enumerate t              Enumerate themes
+  --enumerate ap,at,u        Full enumeration
+
+[bold]Detection:[/bold]
+  --plugins-detection aggressive   Deep plugin search
+  --detection-mode mixed           Mixed detection
+  --api-token TOKEN                Use WPVulnDB API
+
+[bold]Brute Force:[/bold]
+  --passwords list.txt       Password list
+  --usernames admin          Target user
+  --max-threads 10           Thread count
+
+[bold]Examples:[/bold]
+  wpscan --url http://target.com --enumerate p
+  wpscan --url http://target.com -e ap,at,u --api-token TOKEN
+  wpscan --url http://target.com --passwords rockyou.txt --usernames admin""",
+
+    "ffuf": """[bold cyan]Ffuf Cheat Sheet[/bold cyan]
+
+[bold]Modes:[/bold]
+  Directory:   ffuf -u URL/FUZZ -w wordlist
+  Subdomain:   ffuf -u URL -H "Host: FUZZ.target" -w wordlist
+  Parameter:   ffuf -u URL?FUZZ=value -w wordlist
+  POST:        ffuf -u URL -X POST -d "param=FUZZ" -w wordlist
+
+[bold]Common Flags:[/bold]
+  -w wordlist      Wordlist file
+  -u URL           Target URL (use FUZZ as placeholder)
+  -t threads       Thread count (default 40)
+  -mc codes        Match HTTP status codes (200,301)
+  -fc codes        Filter HTTP status codes
+  -fs size         Filter response size
+  -fw words        Filter by word count
+  -e extensions    File extensions (.php,.html)
+  -H header        Add header
+  -X method        HTTP method
+  -d data          POST data
+  -o output        Output file
+  -of format       Output format (json,csv,html)
+
+[bold]Examples:[/bold]
+  ffuf -u https://target.com/FUZZ -w common.txt -mc 200
+  ffuf -u https://target.com/FUZZ -w list.txt -e .php,.html -t 50
+  ffuf -u https://FUZZ.target.com -w subdomains.txt -fc 404""",
+
+    "nuclei": """[bold cyan]Nuclei Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  nuclei -u URL              Scan single target
+  nuclei -l urls.txt         Scan list of targets
+  nuclei -u URL -t template  Use specific template
+
+[bold]Template Selection:[/bold]
+  -t cves/                   CVE templates
+  -t exposed-panels/         Exposed admin panels
+  -t misconfiguration/       Misconfig checks
+  -t technologies/           Technology detection
+  -s critical,high           Filter by severity
+  -tags cve,rce              Filter by tags
+
+[bold]Output:[/bold]
+  -o output.txt              Save results
+  -json                      JSON output
+  -silent                    Silent mode
+
+[bold]Performance:[/bold]
+  -c 25                      Concurrent templates
+  -rl 150                    Rate limit (req/sec)
+  -bs 25                     Bulk size
+
+[bold]Examples:[/bold]
+  nuclei -u https://target.com -s critical,high
+  nuclei -u https://target.com -t cves/ -o results.txt
+  nuclei -l urls.txt -t exposed-panels/ -json""",
+
+    "enum4linux": """[bold cyan]Enum4Linux Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  enum4linux -a target       Full enumeration
+  enum4linux -U target       Enumerate users
+  enum4linux -S target       Enumerate shares
+  enum4linux -P target       Password policy
+  enum4linux -G target       Enumerate groups
+  enum4linux -o target       OS information
+
+[bold]Authentication:[/bold]
+  -u user -p pass            Authenticate
+  -w workgroup               Specify workgroup
+
+[bold]Other:[/bold]
+  -r                         Enumerate users via RID cycling
+  -R range                   RID range (default 500-550,1000-1050)
+  -d                         Detail mode
+  -v                         Verbose
+
+[bold]Examples:[/bold]
+  enum4linux -a 10.10.10.1
+  enum4linux -U -S 10.10.10.1
+  enum4linux -u admin -p pass -a 10.10.10.1""",
+
+    "whatweb": """[bold cyan]WhatWeb Cheat Sheet[/bold cyan]
+
+[bold]Aggression Levels:[/bold]
+  --aggression 1    Stealthy (1 request)
+  --aggression 3    Standard (some extra requests)
+  --aggression 4    Aggressive (many requests)
+
+[bold]Common Flags:[/bold]
+  -v                Verbose output
+  -a LEVEL          Aggression level (1-4)
+  --color=never     No color output
+  --log-brief FILE  Brief log
+  --log-json FILE   JSON log
+  -U agent          Custom User-Agent
+
+[bold]Examples:[/bold]
+  whatweb https://target.com
+  whatweb -v --aggression 3 https://target.com
+  whatweb -a 4 --log-json output.json https://target.com""",
+
+    "dns": """[bold cyan]DNS Toolkit Cheat Sheet[/bold cyan]
+
+[bold]dig Commands:[/bold]
+  dig domain              A records
+  dig domain MX           Mail servers
+  dig domain NS           Name servers
+  dig domain TXT          TXT records
+  dig domain ANY          All records
+  dig -x IP               Reverse DNS
+  dig @ns domain AXFR     Zone transfer
+
+[bold]Useful Flags:[/bold]
+  +short                  Short output
+  +trace                  Trace resolution
+  +noall +answer          Just the answer
+  @server                 Use specific DNS server
+
+[bold]Examples:[/bold]
+  dig example.com +short
+  dig -x 8.8.8.8
+  dig @8.8.8.8 example.com ANY""",
+
+    "whois": """[bold cyan]Whois Cheat Sheet[/bold cyan]
+
+[bold]Usage:[/bold]
+  whois domain.com         Domain lookup
+  whois IP                 IP lookup
+
+[bold]What You Get:[/bold]
+  Registrar, creation/expiry dates, name servers,
+  registrant info, DNSSEC status, abuse contacts
+
+[bold]Tips:[/bold]
+  Some domains have WHOIS privacy enabled
+  Use -H flag to suppress legal disclaimers
+  Regional registries: ARIN, RIPE, APNIC, LACNIC, AFRINIC""",
+
+    "sslscan": """[bold cyan]SSLScan Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  sslscan target:port      Scan TLS/SSL
+  sslscan target           Default port 443
+
+[bold]Common Flags:[/bold]
+  --show-certificate       Show full cert details
+  --no-colour              Plain text output
+  --tls10                  Test TLS 1.0
+  --tls11                  Test TLS 1.1
+  --tls12                  Test TLS 1.2
+  --tls13                  Test TLS 1.3
+  --ssl2                   Test SSLv2
+  --ssl3                   Test SSLv3
+  --xml=file               XML output
+
+[bold]What It Checks:[/bold]
+  Supported protocols, cipher suites, certificate info,
+  key exchange, heartbleed vulnerability, compression
+
+[bold]Examples:[/bold]
+  sslscan example.com
+  sslscan --show-certificate example.com:443
+  sslscan --tls12 --xml=results.xml target.com""",
+
+    "masscan": """[bold cyan]Masscan Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  masscan target -p ports    Scan specific ports
+  masscan target --top-ports N  Top N ports
+
+[bold]Common Flags:[/bold]
+  -p 80,443               Specific ports
+  -p 0-65535              All ports
+  --top-ports 100         Top 100 ports
+  --rate 1000             Packets per second
+  -oX file                XML output
+  -oG file                Grepable output
+  --banners               Grab banners
+
+[bold]Important:[/bold]
+  Masscan requires root/sudo for raw packet scanning
+  Use --rate carefully to avoid overwhelming networks
+  Default rate is 100 pps (very slow)
+
+[bold]Examples:[/bold]
+  sudo masscan 10.0.0.0/24 -p80,443 --rate 1000
+  sudo masscan 10.0.0.1 --top-ports 1000 --rate 5000
+  sudo masscan 10.0.0.0/8 -p0-65535 --rate 100000""",
+
+    "subfinder": """[bold cyan]Subfinder Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  subfinder -d domain       Find subdomains
+  subfinder -dL domains.txt From file
+
+[bold]Common Flags:[/bold]
+  -silent                  Only show results
+  -recursive               Recursive enumeration
+  -all                     Use all sources
+  -t threads               Thread count
+  -o output.txt            Save results
+  -oJ                      JSON output
+  -nW                      No wildcard filtering
+  -timeout seconds         Timeout per source
+
+[bold]Config:[/bold]
+  Provider API keys in ~/.config/subfinder/provider-config.yaml
+  Supports: Shodan, Censys, SecurityTrails, VirusTotal, etc.
+
+[bold]Examples:[/bold]
+  subfinder -d target.com -silent
+  subfinder -d target.com -all -recursive -o subs.txt
+  subfinder -dL domains.txt -t 30 -silent""",
+
+    "wafw00f": """[bold cyan]Wafw00f Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  wafw00f URL              Detect WAF
+  wafw00f -l               List all detectable WAFs
+  wafw00f -a URL           Test all WAFs
+
+[bold]Common Flags:[/bold]
+  -v                       Verbose
+  -a                       Test all (don't stop at first match)
+  -o file                  Output to file
+  -f format                Output format (json, csv, txt)
+
+[bold]What It Detects:[/bold]
+  Cloudflare, AWS WAF, Akamai, Imperva, ModSecurity,
+  F5 BIG-IP, Barracuda, Sucuri, Wordfence, and 100+ more
+
+[bold]Examples:[/bold]
+  wafw00f https://target.com
+  wafw00f -a -v https://target.com
+  wafw00f https://target.com -o results.json -f json""",
+
+    "dirb": """[bold cyan]Dirb Cheat Sheet[/bold cyan]
+
+[bold]Basic Usage:[/bold]
+  dirb URL wordlist        Brute force directories
+  dirb URL                 Use default wordlist
+
+[bold]Common Flags:[/bold]
+  -r                       Non-recursive
+  -f                       Show NOT_FOUND pages
+  -i                       Case-insensitive
+  -z milliseconds          Add delay
+  -o output                Save to file
+  -X ext                   Extensions (.php,.html)
+  -a agent                 Custom User-Agent
+  -p proxy:port            Use proxy
+  -c cookie                Set cookie
+  -H header                Add header
+
+[bold]Examples:[/bold]
+  dirb http://target.com /usr/share/wordlists/dirb/common.txt
+  dirb http://target.com common.txt -X .php,.html -r
+  dirb http://target.com -i -f -o results.txt""",
 }
 
 # Map menu names to sheet keys
@@ -284,6 +569,18 @@ TOOL_KEY_MAP = {
     "Hashcat — GPU Password Cracker": "hashcat",
     "Netcat — Network Swiss Army Knife": "netcat",
     "Recon Autopilot — Auto-scan a target": "recon",
+    "WPScan -- WordPress Scanner": "wpscan",
+    "Ffuf -- Web Fuzzer": "ffuf",
+    "Nuclei -- Vulnerability Scanner": "nuclei",
+    "Enum4Linux -- SMB Enumeration": "enum4linux",
+    "WhatWeb -- Technology Identifier": "whatweb",
+    "DNS Toolkit": "dns",
+    "Whois -- Domain Lookup": "whois",
+    "SSLScan -- TLS/SSL Analyzer": "sslscan",
+    "Masscan -- Fast Port Scanner": "masscan",
+    "Subfinder -- Subdomain Discovery": "subfinder",
+    "Wafw00f -- WAF Detector": "wafw00f",
+    "Dirb -- URL Brute Forcer": "dirb",
 }
 
 

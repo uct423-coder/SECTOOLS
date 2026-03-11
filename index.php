@@ -6,20 +6,30 @@
  * going to dig through a CLI repo to figure it out.
  */
 
-$version = "2.0.0";
+$version = "2.1.0";
 $tools = [
     ["Recon & OSINT", [
         ["Recon Autopilot", "Chains multiple scans automatically on a target", "nmap + nikto + gobuster"],
         ["Nmap", "Network port scanner and service detection", "nmap"],
         ["Nikto", "Web server vulnerability scanner", "nikto"],
-        ["Gobuster", "Directory, DNS, and vhost brute-forcing", "gobuster"],
         ["OSINT", "Subdomain enumeration, reverse IP, HTTP headers", "crt.sh + hackertarget"],
         ["Assessment Wizard", "Full automated security assessment with reporting", "multi-tool"],
+        ["Subfinder", "Fast passive subdomain discovery using multiple sources", "subfinder"],
+        ["WhatWeb", "Identify web technologies, CMS, frameworks, and servers", "whatweb"],
+        ["Whois", "Domain and IP registration lookup", "whois"],
+        ["DNS Toolkit", "DNS lookups, reverse DNS, zone transfers, record queries", "dig"],
     ]],
     ["Exploitation", [
         ["Metasploit", "Guided workflows for MSF modules and payloads", "msfconsole"],
         ["SQLMap", "Automated SQL injection detection and exploitation", "sqlmap"],
         ["Hydra", "Network login brute-forcer for SSH, FTP, HTTP, etc.", "hydra"],
+        ["WPScan", "WordPress vulnerability scanner — plugins, themes, users", "wpscan"],
+        ["Nuclei", "Template-based vulnerability scanner by ProjectDiscovery", "nuclei"],
+    ]],
+    ["Fuzzing & Brute Force", [
+        ["Ffuf", "Fast web fuzzer for directories, subdomains, and parameters", "ffuf"],
+        ["Dirb", "URL brute-forcer with recursive scanning", "dirb"],
+        ["Gobuster", "Directory, DNS, and vhost brute-forcing", "gobuster"],
     ]],
     ["Password Cracking", [
         ["John the Ripper", "CPU-based password hash cracker", "john"],
@@ -31,6 +41,9 @@ $tools = [
         ["Screenshot", "Capture web page screenshots via Chrome or Safari", "headless chrome"],
         ["Port Reference", "Look up ~90 common ports by number or service", "built-in"],
         ["Subnet Calculator", "CIDR notation parser with full network details", "built-in"],
+        ["Masscan", "Extremely fast port scanner for large networks", "masscan"],
+        ["SSLScan", "Analyze SSL/TLS protocols, ciphers, and certificates", "sslscan"],
+        ["Wafw00f", "Detect web application firewalls (100+ WAFs)", "wafw00f"],
     ]],
     ["Generators", [
         ["Reverse Shell Generator", "Payloads for Bash, Python, PHP, Perl, Ruby, PowerShell, Java, Lua, Netcat", "built-in"],
@@ -41,6 +54,7 @@ $tools = [
         ["Hash Identifier", "Detect hash type with Hashcat mode and John format", "built-in"],
         ["Scan History", "Browse, search, view, and delete scan logs", "built-in"],
         ["Diff Scans", "Compare two scan outputs side by side", "built-in"],
+        ["Enum4Linux", "Windows/SMB enumeration — users, shares, groups, policies", "enum4linux"],
     ]],
 ];
 
@@ -359,7 +373,7 @@ $features = [
                 <div class="label">Features</div>
             </div>
             <div class="stat">
-                <div class="num">9</div>
+                <div class="num">21</div>
                 <div class="label">Cheat Sheets</div>
             </div>
             <div class="stat">

@@ -10,6 +10,9 @@ from sectools import (
     nmap_tool, msf_tool, sqlmap_tool, nikto_tool,
     hydra_tool, gobuster_tool, john_tool, hashcat_tool,
     netcat_tool, recon_tool,
+    wpscan_tool, ffuf_tool, nuclei_tool, enum4linux_tool, whatweb_tool,
+    dns_tool, whois_tool, sslscan_tool, masscan_tool, subfinder_tool,
+    wafw00f_tool, dirb_tool,
 )
 from sectools.utils import (
     show_tool_status, generate_report, load_targets_with_notes,
@@ -41,14 +44,19 @@ CATEGORIES = {
         ("Recon Autopilot", recon_tool.run),
         ("Nmap — Network Scanner", nmap_tool.run),
         ("Nikto — Web Server Scanner", nikto_tool.run),
-        ("Gobuster — Dir & DNS Brute Force", gobuster_tool.run),
         ("OSINT — Subdomain & Recon", osint.run),
+        ("Subfinder — Subdomain Discovery", subfinder_tool.run),
+        ("WhatWeb — Technology ID", whatweb_tool.run),
+        ("Whois — Domain Lookup", whois_tool.run),
+        ("DNS Toolkit", dns_tool.run),
         ("Security Assessment Wizard", assessment.run),
     ],
     "Exploitation": [
         ("Metasploit — Framework", msf_tool.run),
         ("SQLMap — SQL Injection", sqlmap_tool.run),
         ("Hydra — Brute Force", hydra_tool.run),
+        ("WPScan — WordPress Scanner", wpscan_tool.run),
+        ("Nuclei — Vulnerability Scanner", nuclei_tool.run),
     ],
     "Password Cracking": [
         ("John the Ripper", john_tool.run),
@@ -60,6 +68,9 @@ CATEGORIES = {
         ("Screenshot — Capture Web Pages", screenshot.run),
         ("Port Reference", port_ref.run),
         ("Subnet Calculator", subnet_calc.run),
+        ("Masscan — Fast Port Scanner", masscan_tool.run),
+        ("SSLScan — TLS Analyzer", sslscan_tool.run),
+        ("Wafw00f — WAF Detector", wafw00f_tool.run),
     ],
     "Generators": [
         ("Reverse Shell Generator", revshell.run),
@@ -70,6 +81,12 @@ CATEGORIES = {
         ("Hash Identifier", hash_id.run),
         ("Scan History Browser", scan_history.run),
         ("Diff Scans", lambda c: diff_scans(c)),
+        ("Enum4Linux — SMB Enumeration", enum4linux_tool.run),
+    ],
+    "Fuzzing & Brute Force": [
+        ("Ffuf — Web Fuzzer", ffuf_tool.run),
+        ("Dirb — URL Brute Forcer", dirb_tool.run),
+        ("Gobuster — Dir & DNS Brute Force", gobuster_tool.run),
     ],
 }
 
@@ -95,8 +112,14 @@ SHORTCUTS = {
     "c": "Hashcat — GPU Cracker",
     "t": "Netcat — Network Swiss Army Knife",
     "p": "HTTP Probe — Quick URL Scanner",
-    "w": "Screenshot — Capture Web Pages",
+    "x": "Screenshot — Capture Web Pages",
     "a": "Security Assessment Wizard",
+    "w": "WPScan — WordPress Scanner",
+    "f": "Ffuf — Web Fuzzer",
+    "u": "Nuclei — Vulnerability Scanner",
+    "d": "DNS Toolkit",
+    "e": "Enum4Linux — SMB Enumeration",
+    "i": "Masscan — Fast Port Scanner",
 }
 
 
@@ -184,6 +207,7 @@ def _build_menu_choices() -> list:
         "Networking & Web": "🌐",
         "Generators": "⚙️ ",
         "Analysis": "📊",
+        "Fuzzing & Brute Force": "🔨",
     }
     for cat in CATEGORIES:
         icon = cat_icons.get(cat, "")
@@ -388,7 +412,7 @@ def main():
 
     while True:
         menu_choices = _build_menu_choices()
-        console.print("[dim]SecTools v2.0.0 │ Ctrl+C to interrupt │ ↑↓ to navigate[/dim]")
+        console.print("[dim]SecTools v2.1.0 │ Ctrl+C to interrupt │ ↑↓ to navigate[/dim]")
         try:
             choice = inquirer.select(
                 message="Select:",
