@@ -12,7 +12,8 @@ PRESETS = {
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ Nikto — Web Server Scanner ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Nikto — Web Server Scanner[/bold cyan]", style="cyan")
+    console.print()
 
     target = ask_target(console, "Target host (IP/hostname/URL):")
     if not target:

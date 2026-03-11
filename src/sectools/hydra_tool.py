@@ -11,7 +11,8 @@ DEFAULT_USERNAMES = str(WORDLISTS_DIR / "top-usernames-shortlist.txt")
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ Hydra — Brute Force ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Hydra — Brute Force[/bold cyan]", style="cyan")
+    console.print()
 
     target = ask_target(console, "Target (IP/hostname):")
     if not target:

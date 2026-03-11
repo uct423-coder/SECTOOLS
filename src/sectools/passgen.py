@@ -25,7 +25,8 @@ def _estimate_strength(length: int, pool_size: int) -> str:
 
 def run(console: Console) -> None:
     """Generate secure random passwords."""
-    console.print("\n[bold cyan]━━━ Password Generator ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Password Generator[/bold cyan]", style="cyan")
+    console.print()
 
     try:
         length = int(inquirer.text(message="Password length:", default="16").execute())

@@ -125,6 +125,8 @@ def _offer_save(console: Console, prefix: str, content: str):
 
 def run(console: Console):
     """OSINT sub-menu."""
+    console.rule("[bold cyan]OSINT — Subdomain & Recon[/bold cyan]", style="cyan")
+    console.print()
     while True:
         action = inquirer.select(
             message="OSINT:",

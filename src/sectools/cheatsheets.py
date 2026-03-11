@@ -293,16 +293,29 @@ def show_cheatsheet(console: Console, tool_key: str):
     if not sheet:
         console.print(f"[red]No cheat sheet for '{tool_key}'.[/red]")
         return
-    console.print(Panel(sheet, border_style="cyan", padding=(1, 2)))
+    title = TOOL_KEY_MAP.get(tool_key, tool_key)
+    # Reverse lookup for display title
+    for display_name, key in TOOL_KEY_MAP.items():
+        if key == tool_key:
+            title = display_name
+            break
+    console.print(Panel(
+        sheet,
+        title=f"[bold bright_white] {title} [/bold bright_white]",
+        border_style="bright_cyan",
+        padding=(1, 3),
+        subtitle="[dim]Press q to exit | SecTools Cheat Sheets[/dim]",
+    ))
 
 
 def cheatsheet_menu(console: Console):
     """Show sub-menu to pick a tool cheat sheet."""
-    choices = list(SHEETS.keys()) + ["Back"]
+    choices = list(TOOL_KEY_MAP.keys()) + ["Back"]
     choice = inquirer.select(
         message="Pick a tool:",
         choices=choices,
         pointer="❯",
     ).execute()
     if choice != "Back":
-        show_cheatsheet(console, choice)
+        tool_key = TOOL_KEY_MAP.get(choice, choice)
+        show_cheatsheet(console, tool_key)

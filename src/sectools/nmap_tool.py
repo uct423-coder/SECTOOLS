@@ -14,7 +14,8 @@ PRESETS = {
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ Nmap — Network Scanner ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Nmap — Network Scanner[/bold cyan]", style="cyan")
+    console.print()
 
     target = ask_target(console, "Target (IP/hostname):")
     if not target:

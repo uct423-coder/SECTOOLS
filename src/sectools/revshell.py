@@ -83,7 +83,8 @@ SHELLS: dict[str, dict[str, str]] = {
 
 def run(console: Console) -> None:
     """Generate a reverse shell payload."""
-    console.print("\n[bold cyan]━━━ Reverse Shell Generator ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Reverse Shell Generator[/bold cyan]", style="cyan")
+    console.print()
 
     language = inquirer.select(
         message="Select language:",

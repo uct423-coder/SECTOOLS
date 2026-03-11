@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.table import Table
 
 from sectools.utils import (
@@ -182,37 +183,90 @@ def _run_assessment(console: Console, config: dict) -> dict:
     scans = SCAN_MATRIX[config["depth"]]
     results = {"scans": {}, "config": config, "start_time": datetime.datetime.now().isoformat()}
 
-    console.print(f"\n[bold cyan]Running {len(scans)} scan(s)...[/bold cyan]\n")
+    console.print()
+    console.print(Panel(
+        f"[bold bright_white]Running {len(scans)} scan(s) against [cyan]{config['hostname']}[/cyan][/bold bright_white]",
+        border_style="cyan",
+        padding=(0, 2),
+    ))
+    console.print()
 
-    for i, (name, method_name) in enumerate(scans, 1):
-        console.print(f"  [bold][{i}/{len(scans)}][/bold] {name} ", end="")
-        start = time.time()
-        try:
-            scan_func = globals()[method_name]
-            output, findings = scan_func(config)
-            duration = round(time.time() - start, 1)
-            status = "ok"
-            console.print(f"[green]✔[/green] [dim]({duration}s, {findings} finding(s))[/dim]")
-        except FileNotFoundError as e:
-            duration = round(time.time() - start, 1)
-            output = f"Tool not installed: {e.filename or 'unknown'}"
-            findings = 0
-            status = "skipped"
-            console.print(f"[yellow]⚠ skipped[/yellow] [dim]({e.filename or 'tool'} not installed)[/dim]")
-        except Exception as e:
-            duration = round(time.time() - start, 1)
-            output = f"Error: {e}"
-            findings = 0
-            status = "error"
-            console.print(f"[red]✘ error[/red] [dim]({e})[/dim]")
+    with Progress(
+        SpinnerColumn("dots"),
+        TextColumn("[bold]{task.description}[/bold]"),
+        BarColumn(bar_width=30, complete_style="cyan", finished_style="green"),
+        TextColumn("[dim]{task.fields[status_text]}[/dim]"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        overall = progress.add_task("Overall", total=len(scans), status_text="")
 
-        results["scans"][name] = {
-            "output": output, "status": status,
-            "duration": duration, "findings": findings,
-        }
+        for i, (name, method_name) in enumerate(scans, 1):
+            progress.update(overall, status_text=f"[{i}/{len(scans)}] {name}...")
+            start = time.time()
+            try:
+                scan_func = globals()[method_name]
+                output, findings = scan_func(config)
+                duration = round(time.time() - start, 1)
+                status = "ok"
+            except FileNotFoundError as e:
+                duration = round(time.time() - start, 1)
+                output = f"Tool not installed: {e.filename or 'unknown'}"
+                findings = 0
+                status = "skipped"
+            except Exception as e:
+                duration = round(time.time() - start, 1)
+                output = f"Error: {e}"
+                findings = 0
+                status = "error"
+
+            results["scans"][name] = {
+                "output": output, "status": status,
+                "duration": duration, "findings": findings,
+            }
+
+            # Print result line
+            if status == "ok":
+                console.print(f"  [green]✔[/green] {name} [dim]({duration}s, {findings} finding(s))[/dim]")
+            elif status == "skipped":
+                console.print(f"  [yellow]⚠[/yellow] {name} [dim](skipped — tool not installed)[/dim]")
+            else:
+                console.print(f"  [red]✘[/red] {name} [dim](error — {output})[/dim]")
+
+            progress.advance(overall)
+
+        progress.update(overall, status_text="[bold green]Done![/bold green]")
 
     results["end_time"] = datetime.datetime.now().isoformat()
-    console.print(f"\n[bold green]Assessment complete.[/bold green]")
+
+    # Summary table
+    console.print()
+    summary_tbl = Table(
+        title="[bold]Assessment Results[/bold]",
+        border_style="bright_cyan",
+        show_lines=True,
+        header_style="bold bright_white on grey23",
+        row_styles=["", "on grey11"],
+        padding=(0, 1),
+    )
+    summary_tbl.add_column("Scan", style="bold")
+    summary_tbl.add_column("Status", justify="center")
+    summary_tbl.add_column("Findings", justify="right")
+    summary_tbl.add_column("Duration", justify="right", style="dim")
+
+    for scan_name, data in results["scans"].items():
+        if data["status"] == "ok" and data["findings"] == 0:
+            st = "[bold green]✔ Pass[/bold green]"
+        elif data["status"] == "ok":
+            st = "[bold yellow]⚠ Issues[/bold yellow]"
+        elif data["status"] == "skipped":
+            st = "[dim]⊘ Skipped[/dim]"
+        else:
+            st = "[bold red]✘ Error[/bold red]"
+        summary_tbl.add_row(scan_name, st, str(data["findings"]), f"{data['duration']}s")
+
+    console.print(summary_tbl)
+    console.print()
 
     # Save raw log
     LOGS_DIR.mkdir(exist_ok=True)

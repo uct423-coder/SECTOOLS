@@ -1,5 +1,6 @@
 """Interactive startup dashboard using Rich panels and tables."""
 
+import datetime
 from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
@@ -11,14 +12,41 @@ from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installe
 from sectools.config import load_config
 from sectools.tips import get_tip
 
-VERSION = "1.2.0"
+VERSION = "2.0.0"
 
-BANNER = r"""[bold cyan]
-   ____            _____           _
-  / ___|  ___  ___|_   _|__   ___ | |___
-  \___ \ / _ \/ __| | |/ _ \ / _ \| / __|
-   ___) |  __/ (__  | | (_) | (_) | \__ \
-  |____/ \___|\___| |_|\___/ \___/|_|___/[/bold cyan]"""
+BANNER_LINES = [
+    "   ____            _____           _",
+    "  / ___|  ___  ___|_   _|__   ___ | |___",
+    "  \\___ \\ / _ \\/ __| | |/ _ \\ / _ \\| / __|",
+    "   ___) |  __/ (__  | | (_) | (_) | \\__ \\",
+    "  |____/ \\___|\\___| |_|\\___/ \\___/|_|___/",
+]
+
+_GRADIENT_COLORS = ["cyan", "bright_cyan", "blue", "bright_blue", "magenta"]
+_WHATS_NEW_FLAG = Path.home() / ".sectools" / ".v2_seen"
+
+
+def _render_banner() -> Text:
+    """Build the banner with a vertical gradient."""
+    text = Text()
+    for i, line in enumerate(BANNER_LINES):
+        color = _GRADIENT_COLORS[i % len(_GRADIENT_COLORS)]
+        text.append(line, style=f"bold {color}")
+        text.append("\n")
+    return text
+
+
+def _gradient_line(width: int = 60) -> Text:
+    """Return a horizontal gradient divider line."""
+    chars = "━" * width
+    seg = max(width // 5, 1)
+    text = Text()
+    colors = ["cyan", "bright_cyan", "blue", "bright_blue", "magenta"]
+    for i, color in enumerate(colors):
+        start = i * seg
+        end = start + seg if i < len(colors) - 1 else width
+        text.append(chars[start:end], style=f"bold {color}")
+    return text
 
 
 def _format_size(size_bytes: int) -> str:
@@ -52,12 +80,33 @@ def _tools_installed_count() -> tuple[int, int]:
     return installed, len(TOOL_BINARIES)
 
 
-def _recent_scans(n: int = 5) -> list[str]:
-    """Return the last n scan log filenames sorted by modification time."""
+def _recent_scans(n: int = 5) -> list[dict]:
+    """Return the last n scan log entries with metadata."""
     if not LOGS_DIR.exists():
         return []
     logs = sorted(LOGS_DIR.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return [f.name for f in logs[:n]]
+    results = []
+    for f in logs[:n]:
+        stat = f.stat()
+        results.append({
+            "name": f.name,
+            "time": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
+            "size": _format_size(stat.st_size),
+        })
+    return results
+
+
+def _should_show_whats_new() -> bool:
+    """Check whether the v2.0 splash should display."""
+    if _WHATS_NEW_FLAG.exists():
+        return False
+    return True
+
+
+def _mark_whats_new_seen():
+    """Write the flag file so the splash only shows once."""
+    _WHATS_NEW_FLAG.parent.mkdir(parents=True, exist_ok=True)
+    _WHATS_NEW_FLAG.touch()
 
 
 def show_dashboard(console: Console):
@@ -73,8 +122,31 @@ def show_dashboard(console: Console):
     subtitle = f"v{VERSION}"
     if session:
         subtitle += f"  ·  Session: {session}"
-    console.print(BANNER)
+
+    console.print()
+    console.print(_render_banner())
+    console.print(f"  ", end="")
+    console.print(_gradient_line())
     console.print(f"  [dim]Made by Shepard Sotiroglou[/dim]  ·  [dim]{subtitle}[/dim]\n")
+
+    # What's New (one-time after upgrade)
+    if _should_show_whats_new():
+        whats_new = Text.assemble(
+            ("  NEW  ", "bold white on magenta"),
+            ("  Visual overhaul with gradient banner and improved panels\n", ""),
+            ("  NEW  ", "bold white on blue"),
+            ("  Scan history now shows timestamps and file sizes\n", ""),
+            ("  NEW  ", "bold white on cyan"),
+            ("  Smarter tips panel with refreshed styling", ""),
+        )
+        console.print(Panel(
+            whats_new,
+            title="[bold bright_cyan]What's New in v2.0[/bold bright_cyan]",
+            title_align="left",
+            border_style="bright_cyan",
+            padding=(1, 2),
+        ))
+        _mark_whats_new_seen()
 
     # Quick Stats
     targets_count = len(load_targets())
@@ -83,31 +155,50 @@ def show_dashboard(console: Console):
     disk = _log_disk_usage()
 
     stats = [
-        Panel(f"[bold green]{targets_count}[/bold green]\n[dim]Targets[/dim]", border_style="green", expand=True),
-        Panel(f"[bold blue]{scans_count}[/bold blue]\n[dim]Scans[/dim]", border_style="blue", expand=True),
-        Panel(f"[bold yellow]{inst}[/bold yellow][dim]/{total}[/dim]\n[dim]Tools[/dim]", border_style="yellow", expand=True),
-        Panel(f"[bold magenta]{disk}[/bold magenta]\n[dim]Logs[/dim]", border_style="magenta", expand=True),
+        Panel(
+            Text.assemble(("🎯 ", ""), (str(targets_count), "bold bright_green"), ("\n", ""), ("Targets", "dim")),
+            border_style="green", expand=True,
+        ),
+        Panel(
+            Text.assemble(("📡 ", ""), (str(scans_count), "bold bright_blue"), ("\n", ""), ("Scans", "dim")),
+            border_style="blue", expand=True,
+        ),
+        Panel(
+            Text.assemble(("🔧 ", ""), (f"{inst}", "bold bright_yellow"), (f"/{total}", "dim"), ("\n", ""), ("Tools", "dim")),
+            border_style="yellow", expand=True,
+        ),
+        Panel(
+            Text.assemble(("💾 ", ""), (disk, "bold bright_magenta"), ("\n", ""), ("Log Size", "dim")),
+            border_style="magenta", expand=True,
+        ),
     ]
     console.print(Columns(stats, equal=True, expand=True))
 
     # Recent Scans
     recent = _recent_scans()
     if recent:
-        scan_table = Table(border_style="dim", expand=True)
-        scan_table.add_column("Recent Scans", style=theme)
-        for name in recent:
-            scan_table.add_row(name)
-        console.print(Panel(scan_table, title="Recent Scans", border_style="dim"))
+        scan_table = Table(border_style="dim", expand=True, show_header=True, header_style="bold " + theme)
+        scan_table.add_column("Scan Log", style=theme, ratio=3)
+        scan_table.add_column("Date / Time", style="dim", ratio=2, justify="center")
+        scan_table.add_column("Size", style="dim", ratio=1, justify="right")
+        for entry in recent:
+            scan_table.add_row(entry["name"], entry["time"], entry["size"])
+        console.print(Panel(scan_table, title="[bold]📋 Recent Scans[/bold]", border_style="blue"))
     else:
-        console.print(Panel("[dim]No scan logs yet.[/dim]", title="Recent Scans", border_style="dim"))
+        console.print(Panel("[dim]No scan logs yet. Run your first scan![/dim]", title="[bold]📋 Recent Scans[/bold]", border_style="blue"))
 
     # Tip of the Day
+    tip_text = Text.assemble(
+        ("» ", "bold bright_yellow"),
+        (get_tip(), "italic"),
+    )
     console.print(
         Panel(
-            f"[italic]{get_tip()}[/italic]",
-            title="[bold]💡 Tip[/bold]",
+            tip_text,
+            title="[bold bright_yellow]💡 Tip of the Day[/bold bright_yellow]",
             title_align="left",
-            border_style="dim",
+            border_style="bright_yellow",
+            padding=(0, 2),
         )
     )
 

@@ -62,16 +62,39 @@ def config_menu(console: Console):
     """Interactive menu for viewing and editing settings."""
     config = load_config()
 
+    SETTING_ICONS = {
+        "default_wordlist": "📄",
+        "default_dirwordlist": "📂",
+        "notifications_enabled": "🔔",
+        "theme_color": "🎨",
+        "log_retention_days": "📅",
+        "auto_save_targets": "💾",
+        "favorites": "⭐",
+    }
+
     while True:
         # Display current settings
-        table = Table(title="⚙️  Configuration", border_style="dim", show_lines=False)
-        table.add_column("Setting", style="cyan")
+        table = Table(
+            title="[bold]Settings[/bold]",
+            border_style="bright_cyan",
+            show_lines=True,
+            header_style="bold bright_white on grey23",
+            row_styles=["", "on grey11"],
+            padding=(0, 1),
+        )
+        table.add_column("", width=3, justify="center")
+        table.add_column("Setting", style="cyan bold")
         table.add_column("Value", style="bold")
         for key, value in config.items():
+            icon = SETTING_ICONS.get(key, "⚙️")
             display = str(value)
             if isinstance(value, bool):
                 display = "[green]✔ on[/green]" if value else "[red]✘ off[/red]"
-            table.add_row(key, display)
+            elif isinstance(value, int):
+                display = f"[yellow]{value}[/yellow]"
+            elif isinstance(value, list):
+                display = f"[dim]{len(value)} items[/dim]" if value else "[dim]empty[/dim]"
+            table.add_row(icon, key, display)
         console.print(table)
 
         choices = list(config.keys()) + ["Save & Back"]

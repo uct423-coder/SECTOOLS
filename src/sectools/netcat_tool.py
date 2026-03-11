@@ -16,7 +16,8 @@ MODES = {
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ Netcat — Network Swiss Army Knife ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Netcat — Network Swiss Army Knife[/bold cyan]", style="cyan")
+    console.print()
 
     mode = inquirer.select(
         message="Mode:",

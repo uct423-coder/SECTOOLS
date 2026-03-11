@@ -45,20 +45,45 @@ def _format_size(path: Path) -> str:
         return f"{size / (1024 * 1024):.1f} MB"
 
 
+TOOL_COLORS = {
+    "nmap": ("🔍", "bright_cyan"),
+    "nikto": ("🕷️", "bright_yellow"),
+    "gobuster": ("📂", "bright_green"),
+    "sqlmap": ("💉", "bright_red"),
+    "hydra": ("🔑", "bright_magenta"),
+    "john": ("🔓", "yellow"),
+    "hashcat": ("🔓", "yellow"),
+    "metasploit": ("💀", "red"),
+    "assessment": ("📋", "bright_blue"),
+    "netcat": ("🌐", "bright_white"),
+}
+
+
 def _show_table(console: Console, logs: list[Path]):
     """Display a Rich table of all scan logs."""
-    table = Table(title="📋 Scan History", show_lines=False, border_style="dim")
+    table = Table(
+        title="[bold]Scan History[/bold]",
+        border_style="bright_cyan",
+        show_lines=True,
+        header_style="bold bright_white on grey23",
+        row_styles=["", "on grey11"],
+        padding=(0, 1),
+    )
     table.add_column("#", style="dim", width=4, justify="right")
-    table.add_column("Filename", style="cyan")
+    table.add_column("", width=3, justify="center")
     table.add_column("Tool", style="bold")
+    table.add_column("Filename", style="cyan")
     table.add_column("Date", style="dim")
     table.add_column("Size", style="dim", justify="right")
 
     for i, log in enumerate(logs, 1):
+        tool_name = _extract_tool_name(log.name)
+        icon, color = TOOL_COLORS.get(tool_name.lower(), ("🔧", "white"))
         table.add_row(
             str(i),
+            icon,
+            f"[{color}]{tool_name}[/{color}]",
             log.name,
-            _extract_tool_name(log.name),
             _format_date(log),
             _format_size(log),
         )

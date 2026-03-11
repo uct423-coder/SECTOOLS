@@ -37,7 +37,7 @@ def _run_scan(cmd: list[str], name: str, log_file: Path, console: Console) -> st
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ Recon Autopilot ━━━[/bold cyan]")
+    console.rule("[bold cyan]Recon Autopilot[/bold cyan]", style="cyan")
     console.print("[dim]  Runs multiple scans on a target automatically.[/dim]\n")
 
     target = inquirer.text(message="Target (IP/hostname/URL):").execute().strip()

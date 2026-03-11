@@ -22,7 +22,8 @@ def _ip_class(network: ipaddress.IPv4Network) -> str:
 
 def run(console: Console) -> None:
     """Calculate subnet details from CIDR notation."""
-    console.print("\n[bold cyan]━━━ IP / Subnet Calculator ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]IP / Subnet Calculator[/bold cyan]", style="cyan")
+    console.print()
 
     cidr = inquirer.text(message="Enter CIDR (e.g. 192.168.1.0/24):").execute()
     if not cidr:

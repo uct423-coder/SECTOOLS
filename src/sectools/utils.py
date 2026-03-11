@@ -5,6 +5,7 @@ import subprocess
 import datetime
 from pathlib import Path
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 LOGS_DIR = Path.home() / "sectools-logs"
@@ -54,17 +55,27 @@ def check_installed(binary: str) -> bool:
 
 def show_tool_status(console: Console):
     """Display a table of all tools and their install status."""
-    table = Table(title="Tool Status", border_style="dim", show_lines=False)
+    table = Table(
+        title="[bold]Tool Status[/bold]",
+        border_style="bright_cyan",
+        show_lines=True,
+        header_style="bold bright_white on grey23",
+        row_styles=["", "on grey11"],
+        padding=(0, 1),
+    )
     table.add_column("", width=3, justify="center")
     table.add_column("Tool", style="bold")
-    table.add_column("Binary", style="dim")
+    table.add_column("Binary", style="dim italic")
+    table.add_column("Status", justify="center")
 
     for tool, binary in TOOL_BINARIES.items():
         if check_installed(binary):
             icon = "[green]✔[/green]"
+            status = "[bold green]Installed[/bold green]"
         else:
             icon = "[red]✘[/red]"
-        table.add_row(icon, tool, binary)
+            status = "[dim red]Missing[/dim red]"
+        table.add_row(icon, tool, binary, status)
 
     console.print(table)
     console.print()
@@ -104,8 +115,12 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
         import os
         env = {**os.environ, **proxy_env}
 
-    console.print(f"  [dim]→[/dim] [bold]{' '.join(cmd)}[/bold]")
-    console.print(f"  [dim]📄 {log_file}[/dim]\n")
+    console.print(Panel(
+        f"[bold white]{' '.join(cmd)}[/bold white]\n[dim]Log: {log_file}[/dim]",
+        title=f"[bold cyan]▶ {tool_name}[/bold cyan]",
+        border_style="cyan",
+        padding=(0, 2),
+    ))
 
     with open(log_file, "w") as f:
         f.write(f"# {tool_name} scan — {datetime.datetime.now().isoformat()}\n")
@@ -116,10 +131,212 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
             f.write(line)
         process.wait()
 
-    console.print(f"\n  [bold green]✔[/bold green] Results saved to [cyan]{log_file}[/cyan]")
+    # Read back the full output for summary
+    output = log_file.read_text()
+
+    console.print()
+    console.print(Panel(
+        f"[bold green]✔ Results saved[/bold green]\n[cyan]{log_file}[/cyan]",
+        border_style="green",
+        padding=(0, 2),
+    ))
+
+    # Show smart summary
+    _show_scan_summary(console, tool_name, output)
+
     from sectools.notifications import notify
     notify("SecTools", f"{tool_name} scan complete")
     return process
+
+
+import re as _re
+
+
+def _show_scan_summary(console: Console, tool_name: str, output: str):
+    """Parse scan output and show a clean summary panel."""
+    tool = tool_name.lower().replace(" ", "_")
+    lines = output.splitlines()
+
+    # Skip comment/header lines from our own logging
+    content_lines = [l for l in lines if not l.startswith("#") and l.strip()]
+
+    summary_items = []
+    details_table = None
+
+    # ── Nmap ──────────────────────────────────────────────────────
+    if "nmap" in tool:
+        open_ports = []
+        host_up = False
+        os_info = None
+        for line in content_lines:
+            if "Host is up" in line:
+                host_up = True
+            m = _re.match(r'^(\d+/\w+)\s+(\w+)\s+(.+)$', line.strip())
+            if m and "open" in m.group(2):
+                open_ports.append((m.group(1), m.group(2), m.group(3).strip()))
+            if "OS details:" in line:
+                os_info = line.split("OS details:")[-1].strip()
+            if "Running:" in line:
+                os_info = os_info or line.split("Running:")[-1].strip()
+
+        summary_items.append(f"[bold]Host:[/bold] {'[green]Up[/green]' if host_up else '[red]Down / No response[/red]'}")
+        summary_items.append(f"[bold]Open ports:[/bold] [cyan]{len(open_ports)}[/cyan]")
+        if os_info:
+            summary_items.append(f"[bold]OS:[/bold] {os_info}")
+
+        if open_ports:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("Port", style="cyan", justify="right")
+            details_table.add_column("State", style="green")
+            details_table.add_column("Service", style="white")
+            for port, state, service in open_ports[:20]:
+                details_table.add_row(port, state, service)
+            if len(open_ports) > 20:
+                summary_items.append(f"[dim]... and {len(open_ports) - 20} more ports[/dim]")
+
+    # ── Nikto ─────────────────────────────────────────────────────
+    elif "nikto" in tool:
+        findings = []
+        server = None
+        for line in content_lines:
+            if line.strip().startswith("+ Server:"):
+                server = line.split("+ Server:")[-1].strip()
+            elif line.strip().startswith("+") and ("OSVDB" in line or "found" in line.lower() or "vuln" in line.lower()):
+                finding = line.strip().lstrip("+ ").strip()
+                if finding:
+                    findings.append(finding)
+            elif line.strip().startswith("+") and len(line.strip()) > 10 and "+" != line.strip():
+                txt = line.strip().lstrip("+ ").strip()
+                if any(kw in txt.lower() for kw in ["header", "allow", "option", "cookie", "xss", "x-frame", "csrf"]):
+                    findings.append(txt)
+
+        if server:
+            summary_items.append(f"[bold]Server:[/bold] {server}")
+        summary_items.append(f"[bold]Findings:[/bold] [cyan]{len(findings)}[/cyan]")
+
+        if findings:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("#", style="dim", width=4, justify="right")
+            details_table.add_column("Finding", style="yellow")
+            for i, f in enumerate(findings[:15], 1):
+                details_table.add_row(str(i), f[:120])
+            if len(findings) > 15:
+                summary_items.append(f"[dim]... and {len(findings) - 15} more findings[/dim]")
+
+    # ── Gobuster ──────────────────────────────────────────────────
+    elif "gobuster" in tool:
+        discovered = []
+        for line in content_lines:
+            # Gobuster output: /path (Status: 200) [Size: 1234]
+            m = _re.match(r'^(/\S+)\s+\(Status:\s*(\d+)\)', line.strip())
+            if m:
+                discovered.append((m.group(1), m.group(2)))
+            # Quiet mode: /path
+            elif line.strip().startswith("/") and "Status:" not in line:
+                path = line.strip().split()[0]
+                discovered.append((path, "???"))
+
+        summary_items.append(f"[bold]Paths found:[/bold] [cyan]{len(discovered)}[/cyan]")
+
+        if discovered:
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("Path", style="cyan")
+            details_table.add_column("Status", style="green", justify="right")
+            for path, status in discovered[:20]:
+                color = "green" if status.startswith("2") else "yellow" if status.startswith("3") else "red"
+                details_table.add_row(path, f"[{color}]{status}[/{color}]")
+            if len(discovered) > 20:
+                summary_items.append(f"[dim]... and {len(discovered) - 20} more paths[/dim]")
+
+    # ── SQLMap ────────────────────────────────────────────────────
+    elif "sqlmap" in tool:
+        injectable = []
+        databases = []
+        tables = []
+        for line in content_lines:
+            if "is vulnerable" in line.lower() or "injectable" in line.lower():
+                injectable.append(line.strip())
+            m = _re.match(r'^\[\*\]\s+(.+)$', line.strip())
+            if m:
+                val = m.group(1).strip()
+                if val and not val.startswith("---"):
+                    databases.append(val)
+            if "| " in line and "tables" not in line.lower():
+                tables.append(line.strip())
+
+        if injectable:
+            summary_items.append(f"[bold red]Injections found:[/bold red] [red]{len(injectable)}[/red]")
+            for inj in injectable[:5]:
+                summary_items.append(f"  [red]>[/red] {inj[:100]}")
+        else:
+            summary_items.append("[bold]Injections found:[/bold] [green]0[/green]")
+        if databases:
+            summary_items.append(f"[bold]Databases:[/bold] {', '.join(databases[:10])}")
+
+    # ── Hydra ─────────────────────────────────────────────────────
+    elif "hydra" in tool:
+        creds_found = []
+        for line in content_lines:
+            if "login:" in line.lower() and "password:" in line.lower():
+                creds_found.append(line.strip())
+
+        if creds_found:
+            summary_items.append(f"[bold red]Credentials found:[/bold red] [red]{len(creds_found)}[/red]")
+            details_table = Table(border_style="dim", show_lines=False, padding=(0, 1))
+            details_table.add_column("#", style="dim", width=4, justify="right")
+            details_table.add_column("Result", style="red bold")
+            for i, cred in enumerate(creds_found[:10], 1):
+                details_table.add_row(str(i), cred[:120])
+        else:
+            summary_items.append("[bold]Credentials found:[/bold] [green]0[/green]")
+
+    # ── John / Hashcat ────────────────────────────────────────────
+    elif "john" in tool or "hashcat" in tool:
+        cracked = []
+        for line in content_lines:
+            # John: password (username)
+            # Hashcat: hash:password
+            if ":" in line and not line.startswith("#") and not line.startswith("["):
+                parts = line.strip().split(":")
+                if len(parts) >= 2 and len(parts[-1]) < 100:
+                    cracked.append(line.strip())
+
+        summary_items.append(f"[bold]Cracked:[/bold] [cyan]{len(cracked)}[/cyan]")
+        if cracked:
+            for c in cracked[:10]:
+                summary_items.append(f"  [green]>[/green] {c[:80]}")
+
+    # ── Generic fallback ──────────────────────────────────────────
+    else:
+        total_lines = len(content_lines)
+        summary_items.append(f"[bold]Output:[/bold] {total_lines} lines")
+        # Show last 5 interesting lines
+        interesting = [l for l in content_lines if l.strip() and len(l.strip()) > 5][-5:]
+        if interesting:
+            for line in interesting:
+                summary_items.append(f"  [dim]│[/dim] {line.strip()[:100]}")
+
+    # ── Render the summary ────────────────────────────────────────
+    if not summary_items and not details_table:
+        return  # Nothing to summarize
+
+    summary_text = "\n".join(summary_items)
+
+    from rich.console import Group
+    parts = []
+    if summary_text:
+        from rich.text import Text
+        parts.append(summary_text)
+    if details_table:
+        parts.append(details_table)
+
+    console.print()
+    console.print(Panel(
+        Group(*parts) if len(parts) > 1 else parts[0],
+        title=f"[bold bright_white]Scan Summary[/bold bright_white]",
+        border_style="bright_cyan",
+        padding=(1, 2),
+    ))
 
 
 def _load_targets_json() -> list[dict]:

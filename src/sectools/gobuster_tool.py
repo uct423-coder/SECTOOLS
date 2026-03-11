@@ -12,7 +12,8 @@ from sectools.config import load_config
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ Gobuster — Dir & DNS Brute Force ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]Gobuster — Dir & DNS Brute Force[/bold cyan]", style="cyan")
+    console.print()
 
     mode = inquirer.select(
         message="Mode:",

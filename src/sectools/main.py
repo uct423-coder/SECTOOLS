@@ -132,6 +132,12 @@ def _run_category(console: Console, category: str):
     """Show a sub-menu for a tool category."""
     tools = CATEGORIES[category]
     choices = [t[0] for t in tools] + ["Back"]
+    cat_icons = {
+        "Recon & OSINT": "🔍", "Exploitation": "💥", "Password Cracking": "🔑",
+        "Networking & Web": "🌐", "Generators": "⚙️ ", "Analysis": "📊",
+    }
+    icon = cat_icons.get(category, "")
+    console.rule(f"[bold cyan]{icon} {category}[/bold cyan]", style="cyan")
 
     while True:
         choice = inquirer.select(
@@ -164,12 +170,13 @@ def _build_menu_choices() -> list:
 
     # Favorites at the top
     if favorites:
-        choices.append(Separator("── ★ Favorites ──"))
+        choices.append(Separator("╭─── ★ Favorites ───╮"))
         for fav in favorites:
             choices.append(fav)
+        choices.append(Separator("╰───────────────────╯"))
 
     # Tool categories with emoji indicators
-    choices.append(Separator("── Tools ──"))
+    choices.append(Separator("┌─── Tools ─────────────────────┐"))
     cat_icons = {
         "Recon & OSINT": "🔍",
         "Exploitation": "💥",
@@ -182,9 +189,10 @@ def _build_menu_choices() -> list:
         icon = cat_icons.get(cat, "")
         count = len(CATEGORIES[cat])
         choices.append(f"{icon} {cat}  ({count})")
+    choices.append(Separator("└───────────────────────────────┘"))
 
     # Other
-    choices.append(Separator("──────────"))
+    choices.append(Separator("┌─── Actions ───────────────────┐"))
     choices.extend([
         "🔗 Workflows",
         "🗂️  Management",
@@ -197,6 +205,7 @@ def _build_menu_choices() -> list:
         "Clear Screen",
         "Exit",
     ])
+    choices.append(Separator("└───────────────────────────────┘"))
 
     return choices
 
@@ -379,6 +388,7 @@ def main():
 
     while True:
         menu_choices = _build_menu_choices()
+        console.print("[dim]SecTools v2.0.0 │ Ctrl+C to interrupt │ ↑↓ to navigate[/dim]")
         try:
             choice = inquirer.select(
                 message="Select:",

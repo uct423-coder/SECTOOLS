@@ -47,7 +47,8 @@ def _get_ssl_info(hostname: str, port: int) -> dict | None:
 
 def run(console: Console) -> None:
     """Probe a URL and display HTTP response details."""
-    console.print("\n[bold cyan]━━━ HTTP Probe ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]HTTP Probe[/bold cyan]", style="cyan")
+    console.print()
 
     url = inquirer.text(message="Enter URL:").execute()
     if not url:

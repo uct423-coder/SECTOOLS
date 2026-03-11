@@ -13,7 +13,8 @@ PRESETS = {
 
 
 def run(console: Console):
-    console.print("\n[bold cyan]━━━ SQLMap — SQL Injection ━━━[/bold cyan]\n")
+    console.rule("[bold cyan]SQLMap — SQL Injection[/bold cyan]", style="cyan")
+    console.print()
 
     url = inquirer.text(message="Target URL (with parameter, e.g. http://target/page?id=1):").execute()
     if not url.strip():

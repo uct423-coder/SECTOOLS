@@ -33,6 +33,20 @@ TIPS = [
     "Use encoding tools to test for input validation bypasses.",
     "Hash identification helps choose the right cracking approach.",
     "Back up your logs and reports — they're your evidence.",
+    "Use HTTPS Everywhere — test for mixed content and insecure resource loading.",
+    "Check for open .git directories on web servers — they often leak source code.",
+    "Test CORS configurations — misconfigured origins can expose APIs to attackers.",
+    "Enumerate S3 buckets and cloud storage — misconfigurations are common.",
+    "Use passive reconnaissance first to minimize your footprint on the target.",
+    "Check for subdomain takeover by looking for dangling CNAME records.",
+    "Test for Server-Side Request Forgery (SSRF) on any URL input parameters.",
+    "Rate-limit your scans to avoid triggering WAFs or getting your IP blocked.",
+    "Always check for default admin panels (/admin, /wp-admin, /phpmyadmin).",
+    "Use different User-Agent strings to test how WAFs respond to various clients.",
+    "Check for exposed API documentation (Swagger/OpenAPI) at /api-docs or /swagger.",
+    "Test for directory traversal with encoded payloads like %2e%2e%2f.",
+    "Monitor your scans in real-time — early findings can guide your next steps.",
+    "After finding credentials, check for password reuse across multiple services.",
 ]
 
 
