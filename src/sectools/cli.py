@@ -210,7 +210,21 @@ def cmd_uninstall():
         else:
             print("  Kept user data.")
 
-    print(f"\nSecTools fully uninstalled. To remove the source code: rm -rf {repo}")
+    # Remove the source code repo itself
+    answer = input(f"\nDelete source code at {repo}? This cannot be undone. (y/N): ").strip().lower()
+    if answer == "y":
+        # Schedule deletion — we can't delete while running from inside the dir,
+        # so spawn a background process to do it after we exit.
+        import subprocess as _sp
+        _sp.Popen(
+            ["bash", "-c", f'sleep 1 && rm -rf "{repo}"'],
+            stdout=_sp.DEVNULL,
+            stderr=_sp.DEVNULL,
+            start_new_session=True,
+        )
+        print(f"\n  SecTools fully uninstalled. Source code at {repo} will be removed.")
+    else:
+        print(f"\n  SecTools uninstalled. Source code kept at {repo}")
 
 
 def _human_size(size: int) -> str:
