@@ -1,17 +1,19 @@
 """Auto-install missing security tools based on the current platform."""
 
 import platform
+import shutil
 import subprocess
+from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Confirm
 
 from sectools.utils import TOOL_BINARIES, check_installed
 
-# Binary -> package name overrides per platform
+# ── macOS (Homebrew) ──────────────────────────────────────────────────
+# Only list tools that actually exist in Homebrew
 BREW_PACKAGES = {
     "nmap": "nmap",
-    "msfconsole": "metasploit",  # special: --cask
     "sqlmap": "sqlmap",
     "nikto": "nikto",
     "hydra": "hydra",
@@ -19,20 +21,16 @@ BREW_PACKAGES = {
     "john": "john",
     "hashcat": "hashcat",
     "nc": "netcat",
-    "wpscan": "wpscan",
     "ffuf": "ffuf",
-    "nuclei": "nuclei",
-    "enum4linux": "enum4linux",
-    "whatweb": "whatweb",
     "masscan": "masscan",
-    "subfinder": "subfinder",
-    "wafw00f": "wafw00f",
-    "dirb": "dirb",
     "sslscan": "sslscan",
     "dig": "bind",
     "whois": "whois",
 }
 
+BREW_CASK = {"msfconsole": "metasploit"}
+
+# ── Linux (apt) ───────────────────────────────────────────────────────
 APT_PACKAGES = {
     "nmap": "nmap",
     "msfconsole": "metasploit-framework",
@@ -43,20 +41,21 @@ APT_PACKAGES = {
     "john": "john",
     "hashcat": "hashcat",
     "nc": "netcat-openbsd",
-    "wpscan": "wpscan",
     "ffuf": "ffuf",
-    "nuclei": "nuclei",
-    "enum4linux": "enum4linux",
-    "whatweb": "whatweb",
     "masscan": "masscan",
-    "subfinder": "subfinder",
-    "wafw00f": "wafw00f",
-    "dirb": "dirb",
     "sslscan": "sslscan",
     "dig": "dnsutils",
     "whois": "whois",
+    "enum4linux": "enum4linux",
+    "dirb": "dirb",
+    "whatweb": "whatweb",
+    "wpscan": "wpscan",
+    "wafw00f": "wafw00f",
+    "subfinder": "subfinder",
+    "nuclei": "nuclei",
 }
 
+# ── Windows (Chocolatey) ─────────────────────────────────────────────
 CHOCO_PACKAGES = {
     "nmap": "nmap",
     "msfconsole": "metasploit",
@@ -67,32 +66,36 @@ CHOCO_PACKAGES = {
     "john": "john",
     "hashcat": "hashcat",
     "nc": "netcat",
-    "wpscan": "wpscan",
-    "ffuf": "ffuf",
-    "nuclei": "nuclei",
-    "enum4linux": "enum4linux",
-    "whatweb": "whatweb",
-    "masscan": "masscan",
-    "subfinder": "subfinder",
-    "wafw00f": "wafw00f",
-    "dirb": "dirb",
-    "sslscan": "sslscan",
-    "dig": "bind-toolsonly",
-    "whois": "whois",
 }
 
-# Binaries that need brew --cask on macOS
-BREW_CASK = {"msfconsole"}
+# ── Cross-platform fallbacks ─────────────────────────────────────────
+# pipx install (Python tools)
+PIPX_PACKAGES = {
+    "wafw00f": "wafw00f",
+    "sqlmap": "sqlmap",
+}
 
-# Binaries best installed via pip when no system package exists
-PIP_PACKAGES = {"wafw00f": "wafw00f", "wpscan": "wpscan"}
+# gem install (Ruby tools)
+GEM_PACKAGES = {
+    "wpscan": "wpscan",
+    "whatweb": "whatweb",
+}
 
-# Binaries best installed via go install
+# go install (Go tools)
 GO_PACKAGES = {
     "subfinder": "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
     "nuclei": "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
     "ffuf": "github.com/ffuf/ffuf/v2@latest",
+    "gobuster": "github.com/OJ/gobuster/v3@latest",
 }
+
+# Git clone (tools with no package manager)
+GIT_REPOS = {
+    "enum4linux": "https://github.com/CiscoCXSecurity/enum4linux.git",
+    "dirb": "https://github.com/v0re/dirb.git",
+}
+
+TOOLS_DIR = Path.home() / ".sectools-tools"
 
 
 def _detect_platform() -> str:
@@ -105,32 +108,94 @@ def _detect_platform() -> str:
     return "windows"
 
 
-def _build_install_commands(binary: str, plat: str) -> list[list[str]]:
-    """Return a list of install commands to try in order (first success wins)."""
+def _has(binary: str) -> bool:
+    return shutil.which(binary) is not None
+
+
+def _build_install_commands(binary: str, plat: str) -> list[tuple[list[str], str]]:
+    """Return list of (command, description) tuples to try in order."""
     commands = []
 
+    # Platform package manager first
     if plat == "macos":
-        pkg = BREW_PACKAGES.get(binary, binary)
         if binary in BREW_CASK:
-            commands.append(["brew", "install", "--cask", pkg])
-        else:
-            commands.append(["brew", "install", pkg])
+            commands.append(
+                (["brew", "install", "--cask", BREW_CASK[binary]], "brew (cask)")
+            )
+        elif binary in BREW_PACKAGES:
+            commands.append(
+                (["brew", "install", BREW_PACKAGES[binary]], "brew")
+            )
     elif plat == "linux":
-        pkg = APT_PACKAGES.get(binary, binary)
-        commands.append(["sudo", "apt", "install", "-y", pkg])
+        if binary in APT_PACKAGES:
+            commands.append(
+                (["sudo", "apt", "install", "-y", APT_PACKAGES[binary]], "apt")
+            )
     else:
-        pkg = CHOCO_PACKAGES.get(binary, binary)
-        commands.append(["choco", "install", "-y", pkg])
+        if binary in CHOCO_PACKAGES:
+            commands.append(
+                (["choco", "install", "-y", CHOCO_PACKAGES[binary]], "choco")
+            )
 
-    # Fallback: pip install
-    if binary in PIP_PACKAGES:
-        commands.append(["pip3", "install", PIP_PACKAGES[binary]])
+    # pipx (preferred over raw pip — isolated environments)
+    if binary in PIPX_PACKAGES and _has("pipx"):
+        commands.append(
+            (["pipx", "install", PIPX_PACKAGES[binary]], "pipx")
+        )
 
-    # Fallback: go install
-    if binary in GO_PACKAGES:
-        commands.append(["go", "install", GO_PACKAGES[binary]])
+    # gem
+    if binary in GEM_PACKAGES and _has("gem"):
+        commands.append(
+            (["gem", "install", GEM_PACKAGES[binary]], "gem")
+        )
+
+    # go install
+    if binary in GO_PACKAGES and _has("go"):
+        commands.append(
+            (["go", "install", GO_PACKAGES[binary]], "go")
+        )
+
+    # git clone as last resort
+    if binary in GIT_REPOS:
+        clone_dir = TOOLS_DIR / binary
+        if not clone_dir.exists():
+            commands.append(
+                (["git", "clone", GIT_REPOS[binary], str(clone_dir)], "git clone")
+            )
 
     return commands
+
+
+def _post_install_git(binary: str, console: Console):
+    """Set up git-cloned tools (symlink scripts to PATH)."""
+    clone_dir = TOOLS_DIR / binary
+    if not clone_dir.exists():
+        return
+
+    # Find the main script
+    script = None
+    for candidate in [clone_dir / f"{binary}.pl", clone_dir / f"{binary}.py", clone_dir / binary]:
+        if candidate.exists():
+            script = candidate
+            break
+
+    if script is None:
+        # Look for any executable or .pl/.py file
+        for f in clone_dir.iterdir():
+            if f.suffix in (".pl", ".py") and binary in f.stem:
+                script = f
+                break
+
+    if script:
+        script.chmod(0o755)
+        # Create a wrapper in ~/.local/bin
+        local_bin = Path.home() / ".local" / "bin"
+        local_bin.mkdir(parents=True, exist_ok=True)
+        wrapper = local_bin / binary
+        if not wrapper.exists():
+            wrapper.write_text(f"#!/bin/bash\nexec \"{script}\" \"$@\"\n")
+            wrapper.chmod(0o755)
+            console.print(f"       [dim]Linked to {wrapper}[/dim]")
 
 
 def _status_table(console: Console) -> list[str]:
@@ -173,24 +238,43 @@ def run(console: Console):
     plat = _detect_platform()
     console.print(f"[dim]Detected platform: {plat}[/dim]\n")
 
+    TOOLS_DIR.mkdir(parents=True, exist_ok=True)
+
     for i, binary in enumerate(missing, 1):
         commands = _build_install_commands(binary, plat)
         console.print(f"  [dim][{i}/{len(missing)}][/dim] Installing [bold]{binary}[/bold]...")
+
+        if not commands:
+            console.print(f"       [red]✘ No install method available for {binary}[/red]")
+            continue
+
         installed = False
-        for cmd in commands:
+        for cmd, method in commands:
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
                 if result.returncode == 0:
-                    console.print(f"       [green]✔ Installed[/green] [dim]({cmd[0]})[/dim]")
+                    console.print(f"       [green]✔ Installed[/green] [dim]via {method}[/dim]")
+                    # Post-install for git clones
+                    if method == "git clone":
+                        _post_install_git(binary, console)
                     installed = True
                     break
+                # If brew fails with "No formulae found", skip to next method
             except FileNotFoundError:
                 continue
             except subprocess.TimeoutExpired:
-                console.print(f"       [yellow]⚠ Timed out with {cmd[0]}[/yellow]")
+                console.print(f"       [yellow]⚠ Timed out ({method}), trying next...[/yellow]")
                 continue
+
         if not installed:
             console.print(f"       [red]✘ Could not install {binary}[/red]")
+            # Show hint
+            if binary in GEM_PACKAGES:
+                console.print(f"       [dim]Try manually: gem install {GEM_PACKAGES[binary]}[/dim]")
+            elif binary in PIPX_PACKAGES:
+                console.print(f"       [dim]Try manually: pipx install {PIPX_PACKAGES[binary]}[/dim]")
+            elif binary in GO_PACKAGES:
+                console.print(f"       [dim]Try manually: go install {GO_PACKAGES[binary]}[/dim]")
 
     console.print("\n[bold]Updated status:[/bold]\n")
     _status_table(console)
