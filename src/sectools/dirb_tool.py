@@ -24,7 +24,7 @@ def run(console: Console):
         return
 
     config = load_config()
-    wordlist = pick_wordlist(console, config)
+    wordlist = pick_wordlist("Wordlist:", config.get("default_dirwordlist", str(WORDLISTS_DIR / "common.txt")))
     if not wordlist:
         return
 
