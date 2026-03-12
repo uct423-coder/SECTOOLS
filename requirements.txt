@@ -1,4 +1,5 @@
-rich
-inquirerpy
-fpdf2
-cryptography
+rich==13.9.4
+inquirerpy==0.3.4
+fpdf2==2.8.2
+cryptography==43.0.3
+pydantic==2.10.4

@@ -5,6 +5,7 @@ import ipaddress
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.table import Table
+from sectools.theme import bold, rule_style
 
 
 def _ip_class(network: ipaddress.IPv4Network) -> str:
@@ -22,7 +23,7 @@ def _ip_class(network: ipaddress.IPv4Network) -> str:
 
 def run(console: Console) -> None:
     """Calculate subnet details from CIDR notation."""
-    console.rule("[bold cyan]IP / Subnet Calculator[/bold cyan]", style="cyan")
+    console.rule(bold("IP / Subnet Calculator"), style=rule_style())
     console.print()
 
     cidr = inquirer.text(message="Enter CIDR (e.g. 192.168.1.0/24):").execute()

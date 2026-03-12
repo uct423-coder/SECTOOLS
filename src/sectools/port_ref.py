@@ -3,6 +3,7 @@
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.table import Table
+from sectools.theme import bold, rule_style
 
 # (port, protocol, service, description)
 PORTS: list[tuple[int, str, str, str]] = [
@@ -100,7 +101,7 @@ PORTS: list[tuple[int, str, str, str]] = [
 
 def run(console: Console) -> None:
     """Look up common ports by number or service name."""
-    console.rule("[bold cyan]Port Reference[/bold cyan]", style="cyan")
+    console.rule(bold("Port Reference"), style=rule_style())
     console.print()
 
     query = inquirer.text(message="Search by port number or service name:").execute()

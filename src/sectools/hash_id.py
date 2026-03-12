@@ -5,6 +5,7 @@ import re
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.table import Table
+from sectools.theme import bold, rule_style
 
 
 HASH_TYPES = [
@@ -26,7 +27,7 @@ HASH_TYPES = [
 
 def run(console: Console) -> None:
     """Identify a hash type from user input."""
-    console.rule("[bold cyan]Hash Identifier[/bold cyan]", style="cyan")
+    console.rule(bold("Hash Identifier"), style=rule_style())
     console.print()
 
     hash_str = inquirer.text(message="Paste the hash string:").execute()

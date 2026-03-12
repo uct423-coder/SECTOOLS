@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged, ask_target
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Full enumeration (-a)": ["-a"],
@@ -14,30 +14,30 @@ PRESETS = {
 }
 
 
-def run(console: Console):
-    console.rule("[bold cyan]Enum4Linux — SMB Enumeration[/bold cyan]", style="cyan")
-    console.print()
+class Enum4LinuxTool(BaseTool):
+    name = "Enum4Linux — SMB Enumeration"
+    binary = "enum4linux"
+    target_prompt = "Target IP:"
 
-    target = ask_target(console, "Target IP:")
-    if not target:
-        return
+    def _build_command(self, console: Console, target: str) -> list[str] | None:
+        preset = inquirer.select(
+            message="Enumeration type:",
+            choices=list(PRESETS.keys()) + ["View cheat sheet"],
+            pointer="❯",
+        ).execute()
 
-    preset = inquirer.select(
-        message="Enumeration type:",
-        choices=list(PRESETS.keys()) + ["View cheat sheet"],
-        pointer="❯",
-    ).execute()
+        if preset == "View cheat sheet":
+            from sectools.cheatsheets import show_cheatsheet
+            show_cheatsheet(console, "enum4linux")
+            return None
 
-    if preset == "View cheat sheet":
-        from sectools.cheatsheets import show_cheatsheet
-        show_cheatsheet(console, "enum4linux")
-        return
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter enum4linux flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter enum4linux flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
+        return ["enum4linux"] + flags + [target]
 
-    cmd = ["enum4linux"] + flags + [target]
-    run_logged(cmd, console, "enum4linux")
+_tool = Enum4LinuxTool()
+run = _tool.run

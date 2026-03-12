@@ -1,6 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
+from sectools.theme import bold, rule_style
 from sectools.utils import run_logged, ask_target
 
 DNS_CHOICES = [
@@ -16,7 +17,7 @@ DNS_CHOICES = [
 
 
 def run(console: Console):
-    console.rule("[bold cyan]DNS Toolkit[/bold cyan]", style="cyan")
+    console.rule(bold("DNS Toolkit"), style=rule_style())
     console.print()
 
     choice = inquirer.select(

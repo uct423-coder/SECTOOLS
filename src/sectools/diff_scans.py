@@ -5,6 +5,7 @@ from rich.panel import Panel
 from rich.text import Text
 from InquirerPy import inquirer
 from sectools.utils import LOGS_DIR
+from sectools.theme import bold, rule_style
 
 
 def diff_scans(console: Console):
@@ -40,7 +41,7 @@ def diff_scans(console: Console):
     adds = sum(1 for l in diff if l.startswith("+") and not l.startswith("+++"))
     dels = sum(1 for l in diff if l.startswith("-") and not l.startswith("---"))
 
-    console.print(f"\n[bold cyan]━━━ Diff ━━━[/bold cyan]")
+    console.print(f"\n{bold('━━━ Diff ━━━')}")
     console.print(f"  [green]+{adds}[/green] [red]-{dels}[/red]\n")
     for line in diff:
         line = line.rstrip("\n")

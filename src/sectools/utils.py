@@ -7,8 +7,13 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from sectools.theme import bold as th_bold, rule_style, border_style as th_border, primary, accent
 
 LOGS_DIR = Path.home() / "sectools-logs"
+
+DRY_RUN = False
+JSON_MODE = False
+
 TARGETS_FILE = Path.home() / ".sectools-targets"
 WORDLISTS_DIR = Path.home() / ".sectools-wordlists"
 
@@ -69,7 +74,7 @@ def show_tool_status(console: Console):
     """Display a table of all tools and their install status."""
     table = Table(
         title="[bold]Tool Status[/bold]",
-        border_style="bright_cyan",
+        border_style=accent(),
         show_lines=True,
         header_style="bold bright_white on grey23",
         row_styles=["", "on grey11"],
@@ -104,7 +109,7 @@ def extract_hostname(target: str) -> tuple[str, bool]:
     return stripped, False
 
 
-def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.CompletedProcess:
+def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.CompletedProcess | None:
     """Run a command, display it, capture output to a log file, and stream to terminal."""
     from sectools.proxy import get_proxy_args, get_proxy_env
 
@@ -127,10 +132,19 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
         import os
         env = {**os.environ, **proxy_env}
 
+    if DRY_RUN:
+        console.print(Panel(
+            f"[bold yellow]DRY RUN — would execute:[/bold yellow]\n[white]{' '.join(cmd)}[/white]",
+            title=f"[bold yellow]▶ {tool_name} (dry run)[/bold yellow]",
+            border_style="yellow",
+            padding=(0, 2),
+        ))
+        return None
+
     console.print(Panel(
         f"[bold white]{' '.join(cmd)}[/bold white]\n[dim]Log: {log_file}[/dim]",
-        title=f"[bold cyan]▶ {tool_name}[/bold cyan]",
-        border_style="cyan",
+        title=th_bold(f"▶ {tool_name}"),
+        border_style=primary(),
         padding=(0, 2),
     ))
 
@@ -155,6 +169,17 @@ def run_logged(cmd: list[str], console: Console, tool_name: str) -> subprocess.C
 
     # Show smart summary
     _show_scan_summary(console, tool_name, output)
+
+    if JSON_MODE:
+        import json as _json
+        json_output = {
+            "tool": tool_name,
+            "command": cmd,
+            "returncode": process.returncode,
+            "log_file": str(log_file),
+            "output_lines": len(output.splitlines()),
+        }
+        console.print(_json.dumps(json_output, indent=2))
 
     from sectools.notifications import notify
     notify("SecTools", f"{tool_name} scan complete")
@@ -630,7 +655,7 @@ def _show_scan_summary(console: Console, tool_name: str, output: str):
     console.print(Panel(
         Group(*parts) if len(parts) > 1 else parts[0],
         title=f"[bold bright_white]Scan Summary[/bold bright_white]",
-        border_style="bright_cyan",
+        border_style=accent(),
         padding=(1, 2),
     ))
 
@@ -716,10 +741,16 @@ def ask_target(console: Console, message: str = "Target (IP/hostname):") -> str 
             from sectools.scope import is_in_scope
             scope_result = is_in_scope(target)
             if scope_result is False:
-                console.print(f"[bold yellow]⚠ Warning: {target} is OUT OF SCOPE[/bold yellow]")
-                proceed = inquirer.confirm(message="Proceed anyway?", default=False).execute()
-                if not proceed:
+                from sectools.config import load_config
+                config = load_config()
+                if config.get("strict_scope"):
+                    console.print(f"[bold red]✘ BLOCKED: {target} is OUT OF SCOPE (strict mode)[/bold red]")
                     return None
+                else:
+                    console.print(f"[bold yellow]⚠ Warning: {target} is OUT OF SCOPE[/bold yellow]")
+                    proceed = inquirer.confirm(message="Proceed anyway?", default=False).execute()
+                    if not proceed:
+                        return None
             return target
 
     target = inquirer.text(message=message).execute().strip()
@@ -733,10 +764,16 @@ def ask_target(console: Console, message: str = "Target (IP/hostname):") -> str 
     from sectools.scope import is_in_scope
     scope_result = is_in_scope(target)
     if scope_result is False:
-        console.print(f"[bold yellow]⚠ Warning: {target} is OUT OF SCOPE[/bold yellow]")
-        proceed = inquirer.confirm(message="Proceed anyway?", default=False).execute()
-        if not proceed:
+        from sectools.config import load_config
+        config = load_config()
+        if config.get("strict_scope"):
+            console.print(f"[bold red]✘ BLOCKED: {target} is OUT OF SCOPE (strict mode)[/bold red]")
             return None
+        else:
+            console.print(f"[bold yellow]⚠ Warning: {target} is OUT OF SCOPE[/bold yellow]")
+            proceed = inquirer.confirm(message="Proceed anyway?", default=False).execute()
+            if not proceed:
+                return None
 
     return target
 

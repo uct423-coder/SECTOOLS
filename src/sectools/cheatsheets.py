@@ -1,6 +1,7 @@
 from rich.console import Console
 from rich.panel import Panel
 from InquirerPy import inquirer
+from sectools.theme import accent
 
 SHEETS = {
     "nmap": """[bold cyan]Nmap Cheat Sheet[/bold cyan]
@@ -599,7 +600,7 @@ def show_cheatsheet(console: Console, tool_key: str):
     console.print(Panel(
         sheet,
         title=f"[bold bright_white] {title} [/bold bright_white]",
-        border_style="bright_cyan",
+        border_style=accent(),
         padding=(1, 3),
         subtitle="[dim]Press q to exit | SecTools Cheat Sheets[/dim]",
     ))

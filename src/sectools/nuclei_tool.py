@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged, ask_target
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Default templates": [],
@@ -17,39 +17,39 @@ PRESETS = {
 SEVERITIES = ["(skip)", "info", "low", "medium", "high", "critical"]
 
 
-def run(console: Console):
-    console.rule("[bold cyan]Nuclei — Vulnerability Scanner[/bold cyan]", style="cyan")
-    console.print()
+class NucleiTool(BaseTool):
+    name = "Nuclei — Vulnerability Scanner"
+    binary = "nuclei"
+    target_prompt = "Target URL/host:"
 
-    target = ask_target(console, "Target URL/host:")
-    if not target:
-        return
+    def _build_command(self, console: Console, target: str) -> list[str] | None:
+        preset = inquirer.select(
+            message="Scan preset:",
+            choices=list(PRESETS.keys()) + ["View cheat sheet"],
+            pointer="❯",
+        ).execute()
 
-    preset = inquirer.select(
-        message="Scan preset:",
-        choices=list(PRESETS.keys()) + ["View cheat sheet"],
-        pointer="❯",
-    ).execute()
+        if preset == "View cheat sheet":
+            from sectools.cheatsheets import show_cheatsheet
+            show_cheatsheet(console, "nuclei")
+            return None
 
-    if preset == "View cheat sheet":
-        from sectools.cheatsheets import show_cheatsheet
-        show_cheatsheet(console, "nuclei")
-        return
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter nuclei flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = list(PRESETS[preset])
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter nuclei flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = list(PRESETS[preset])
+        severity = inquirer.select(
+            message="Severity filter:",
+            choices=SEVERITIES,
+            pointer="❯",
+        ).execute()
 
-    severity = inquirer.select(
-        message="Severity filter:",
-        choices=SEVERITIES,
-        pointer="❯",
-    ).execute()
+        if severity != "(skip)":
+            flags += ["-s", severity]
 
-    if severity != "(skip)":
-        flags += ["-s", severity]
+        return ["nuclei", "-u", target] + flags
 
-    cmd = ["nuclei", "-u", target] + flags
-    run_logged(cmd, console, "nuclei")
+_tool = NucleiTool()
+run = _tool.run

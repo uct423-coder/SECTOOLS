@@ -1,6 +1,7 @@
 import subprocess
 from InquirerPy import inquirer
 from rich.console import Console
+from sectools.theme import bold, rule_style
 from sectools.utils import run_logged
 
 PRESETS = {
@@ -13,7 +14,7 @@ PRESETS = {
 
 
 def run(console: Console):
-    console.rule("[bold cyan]SQLMap — SQL Injection[/bold cyan]", style="cyan")
+    console.rule(bold("SQLMap — SQL Injection"), style=rule_style())
     console.print()
 
     url = inquirer.text(message="Target URL (with parameter, e.g. http://target/page?id=1):").execute()

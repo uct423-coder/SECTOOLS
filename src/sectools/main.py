@@ -34,6 +34,7 @@ from sectools import osint, screenshot, cred_manager, scope, sessions, assessmen
 from sectools import workflows
 from sectools.proxy import proxy_menu
 from sectools.onboarding import needs_onboarding, run_onboarding
+from sectools.theme import bold, rule_style, primary
 
 console = Console()
 
@@ -126,7 +127,8 @@ SHORTCUTS = {
 def _quick_launch(console: Console):
     """Quick launch a tool via keyboard shortcut."""
     from rich.table import Table
-    table = Table(title="Quick Launch Shortcuts", border_style="cyan", padding=(0, 2))
+    from sectools.theme import border_style as th_border
+    table = Table(title="Quick Launch Shortcuts", border_style=th_border(), padding=(0, 2))
     table.add_column("Key", style="bold cyan", justify="center")
     table.add_column("Tool")
     for key, tool in SHORTCUTS.items():
@@ -160,7 +162,7 @@ def _run_category(console: Console, category: str):
         "Networking & Web": "🌐", "Generators": "⚙️ ", "Analysis": "📊",
     }
     icon = cat_icons.get(category, "")
-    console.rule(f"[bold cyan]{icon} {category}[/bold cyan]", style="cyan")
+    console.rule(bold(f"{icon} {category}"), style=rule_style())
 
     while True:
         choice = inquirer.select(

@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Basic enumeration": [],
@@ -12,31 +12,37 @@ PRESETS = {
 }
 
 
-def run(console: Console):
-    console.rule("[bold cyan]Subfinder — Subdomain Discovery[/bold cyan]", style="cyan")
-    console.print()
+class SubfinderTool(BaseTool):
+    name = "Subfinder — Subdomain Discovery"
+    binary = "subfinder"
+    target_prompt = "Domain:"
 
-    domain = inquirer.text(message="Domain:").execute()
-    if not domain:
-        console.print("[red]No domain provided.[/red]")
-        return
+    def _prompt_target(self, console: Console) -> str | None:
+        domain = inquirer.text(message="Domain:").execute()
+        if not domain:
+            console.print("[red]No domain provided.[/red]")
+            return None
+        return domain
 
-    preset = inquirer.select(
-        message="Scan type:",
-        choices=list(PRESETS.keys()),
-        pointer="❯",
-    ).execute()
+    def _build_command(self, console: Console, target: str) -> list[str]:
+        preset = inquirer.select(
+            message="Scan type:",
+            choices=list(PRESETS.keys()),
+            pointer="❯",
+        ).execute()
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter subfinder flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter subfinder flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
 
-    threads = inquirer.text(
-        message="Threads (default: 10):",
-        default="10",
-    ).execute()
+        threads = inquirer.text(
+            message="Threads (default: 10):",
+            default="10",
+        ).execute()
 
-    cmd = ["subfinder", "-d", domain] + flags + ["-t", threads]
-    run_logged(cmd, console, "subfinder")
+        return ["subfinder", "-d", target] + flags + ["-t", threads]
+
+_tool = SubfinderTool()
+run = _tool.run

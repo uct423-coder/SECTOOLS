@@ -13,6 +13,7 @@ from sectools.utils import (
     extract_hostname, run_logged, save_target, LOGS_DIR, pick_wordlist,
 )
 from sectools.config import load_config, save_config
+from sectools.theme import bold as th_bold, rule_style, primary
 
 WORKFLOWS_FILE = Path.home() / ".sectools-workflows.json"
 
@@ -123,9 +124,9 @@ def _run_workflow(console: Console, name: str, workflow: dict):
     console.print()
     console.print(Panel(
         "\n".join(f"  [{i+1}] {s['label']}" for i, s in enumerate(steps)),
-        title=f"[bold cyan]{name}[/bold cyan]",
+        title=th_bold(name),
         subtitle=f"Target: {hostname}",
-        border_style="cyan",
+        border_style=primary(),
     ))
 
     if not inquirer.confirm(message=f"Run {len(steps)} steps?", default=True).execute():
@@ -145,39 +146,108 @@ def _run_workflow(console: Console, name: str, workflow: dict):
     console.print(f"\n[bold]Running workflow: [cyan]{name}[/cyan] on [cyan]{hostname}[/cyan][/bold]\n")
 
     results = {}
-    for i, step in enumerate(steps, 1):
-        label = step["label"]
-        console.rule(f"[bold][{i}/{len(steps)}] {label}[/bold]")
 
-        if step.get("interactive"):
-            console.print(f"[yellow]Skipping {label} — requires interactive input.[/yellow]")
-            console.print("[dim]Run this tool manually from the main menu.[/dim]")
-            results[label] = "[SKIPPED — interactive]"
-            continue
+    # Group steps for parallel execution
+    from itertools import groupby
 
-        cmd = _build_command(step, hostname, url_target, wordlist)
-        if cmd is None:
-            results[label] = "[SKIPPED]"
-            continue
+    def _step_group_key(step):
+        return step.get("group")
 
-        # Use run_logged for each step (streams output + saves individual log)
-        try:
-            run_logged(cmd, console, f"workflow_{step['tool']}")
-            results[label] = "completed"
-        except FileNotFoundError:
-            console.print(f"[red]{step['tool']} is not installed — skipping.[/red]")
-            results[label] = f"[SKIPPED — {step['tool']} not installed]"
-        except KeyboardInterrupt:
-            console.print(f"\n[yellow]Step interrupted. Continue workflow?[/yellow]")
-            if not inquirer.confirm(message="Continue remaining steps?", default=True).execute():
-                break
+    # Assign sequential group IDs to ungrouped steps so they run alone
+    grouped_steps = []
+    auto_group = -1
+    for step in steps:
+        s = dict(step)
+        if s.get("group") is None:
+            s["group"] = auto_group
+            auto_group -= 1
+        grouped_steps.append(s)
+
+    # Sort by group to cluster same-group steps
+    grouped_steps.sort(key=lambda s: s["group"])
+    step_groups = []
+    for key, group in groupby(grouped_steps, key=lambda s: s["group"]):
+        step_groups.append(list(group))
+
+    step_idx = 0
+    for group in step_groups:
+        if len(group) == 1:
+            # Single step — run sequentially (existing behavior)
+            step = group[0]
+            step_idx += 1
+            label = step["label"]
+            console.rule(f"[bold][{step_idx}/{len(steps)}] {label}[/bold]")
+
+            if step.get("interactive"):
+                console.print(f"[yellow]Skipping {label} — requires interactive input.[/yellow]")
+                results[label] = "[SKIPPED — interactive]"
+                continue
+
+            cmd = _build_command(step, hostname, url_target, wordlist)
+            if cmd is None:
+                results[label] = "[SKIPPED]"
+                continue
+
+            try:
+                run_logged(cmd, console, f"workflow_{step['tool']}")
+                results[label] = "completed"
+            except FileNotFoundError:
+                console.print(f"[red]{step['tool']} is not installed — skipping.[/red]")
+                results[label] = f"[SKIPPED — {step['tool']} not installed]"
+            except KeyboardInterrupt:
+                console.print(f"\n[yellow]Step interrupted. Continue workflow?[/yellow]")
+                if not inquirer.confirm(message="Continue remaining steps?", default=True).execute():
+                    break
+        else:
+            # Multi-step parallel group
+            console.rule(f"[bold]Parallel Group ({len(group)} steps)[/bold]")
+            parallel_cmds = []
+            for step in group:
+                step_idx += 1
+                label = step["label"]
+                if step.get("interactive"):
+                    console.print(f"[yellow]Skipping {label} — interactive.[/yellow]")
+                    results[label] = "[SKIPPED — interactive]"
+                    continue
+                cmd = _build_command(step, hostname, url_target, wordlist)
+                if cmd is None:
+                    results[label] = "[SKIPPED]"
+                    continue
+                parallel_cmds.append((cmd, step["tool"]))
+
+            if parallel_cmds:
+                import asyncio
+                from sectools.async_runner import run_parallel_group
+                from sectools.utils import LOGS_DIR as _LOGS_DIR
+
+                console.print(f"[dim]Running {len(parallel_cmds)} steps in parallel...[/dim]")
+                try:
+                    async_results = asyncio.run(
+                        run_parallel_group(parallel_cmds, console, _LOGS_DIR)
+                    )
+                    for r in async_results:
+                        label_match = [s["label"] for s in group if s["tool"] == r["tool"]]
+                        lbl = label_match[0] if label_match else r["tool"]
+                        if r["returncode"] == 0 or r["returncode"] is None:
+                            results[lbl] = "completed"
+                            console.print(f"  [green]✓[/green] {lbl} — {r['log_file']}")
+                        elif r["returncode"] == -1:
+                            results[lbl] = f"[SKIPPED — {r['tool']} not installed]"
+                            console.print(f"  [red]✘[/red] {lbl} — not installed")
+                        else:
+                            results[lbl] = f"completed (exit {r['returncode']})"
+                            console.print(f"  [yellow]⚠[/yellow] {lbl} — exit {r['returncode']}")
+                except KeyboardInterrupt:
+                    console.print(f"\n[yellow]Parallel group interrupted.[/yellow]")
 
         # Append to workflow log
         with open(log_file, "a") as f:
-            f.write(f"\n{'='*60}\n")
-            f.write(f"# Step {i}: {label}\n")
-            f.write(f"# Status: {results[label]}\n")
-            f.write(f"{'='*60}\n")
+            for step in group:
+                label = step["label"]
+                f.write(f"\n{'='*60}\n")
+                f.write(f"# Step: {label}\n")
+                f.write(f"# Status: {results.get(label, 'unknown')}\n")
+                f.write(f"{'='*60}\n")
 
         console.print()
 
@@ -272,7 +342,7 @@ def _delete_workflow(console: Console):
 
 def run(console: Console):
     """Workflow engine menu."""
-    console.rule("[bold cyan]Workflows[/bold cyan]")
+    console.rule(th_bold("Workflows"), style=rule_style())
     console.print("[dim]Chain multiple tools into automated pipelines.[/dim]\n")
 
     while True:

@@ -1,7 +1,8 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import extract_hostname, run_logged, ask_target
+from sectools.base_tool import BaseTool
+from sectools.utils import extract_hostname
 
 PRESETS = {
     "Fast Scan (-F)": ["-F"],
@@ -13,34 +14,34 @@ PRESETS = {
 }
 
 
-def run(console: Console):
-    console.rule("[bold cyan]Nmap — Network Scanner[/bold cyan]", style="cyan")
-    console.print()
+class NmapTool(BaseTool):
+    name = "Nmap — Network Scanner"
+    binary = "nmap"
+    target_prompt = "Target (IP/hostname):"
 
-    target = ask_target(console, "Target (IP/hostname):")
-    if not target:
-        return
+    def _build_command(self, console: Console, target: str) -> list[str] | None:
+        hostname, was_url = extract_hostname(target)
+        if was_url:
+            console.print(f"[yellow]Extracted hostname: {hostname}[/yellow]")
 
-    hostname, was_url = extract_hostname(target)
-    if was_url:
-        console.print(f"[yellow]Extracted hostname: {hostname}[/yellow]")
+        preset = inquirer.select(
+            message="Scan type:",
+            choices=list(PRESETS.keys()) + ["View cheat sheet"],
+            pointer="❯",
+        ).execute()
 
-    preset = inquirer.select(
-        message="Scan type:",
-        choices=list(PRESETS.keys()) + ["View cheat sheet"],
-        pointer="❯",
-    ).execute()
+        if preset == "View cheat sheet":
+            from sectools.cheatsheets import show_cheatsheet
+            show_cheatsheet(console, "nmap")
+            return None
 
-    if preset == "View cheat sheet":
-        from sectools.cheatsheets import show_cheatsheet
-        show_cheatsheet(console, "nmap")
-        return
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter nmap flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter nmap flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
+        return ["nmap"] + flags + [hostname]
 
-    cmd = ["nmap"] + flags + [hostname]
-    run_logged(cmd, console, "nmap")
+_tool = NmapTool()
+run = _tool.run

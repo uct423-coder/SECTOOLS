@@ -62,6 +62,12 @@ def _view_scope(console: Console):
         table.add_row("Domain", domain)
     console.print(table)
 
+    from sectools.config import load_config
+    config = load_config()
+    strict = config.get("strict_scope", False)
+    status = "[bold red]ON[/bold red]" if strict else "[dim]OFF[/dim]"
+    console.print(f"\n  Strict Mode: {status}")
+
 
 def _add_cidr(console: Console):
     cidr = inquirer.text(message="CIDR (e.g. 10.0.0.0/24):").execute().strip()
@@ -97,12 +103,23 @@ def _clear_scope(console: Console):
         console.print("[green]✔ Scope cleared.[/green]")
 
 
+def _toggle_strict(console: Console):
+    """Toggle strict scope enforcement."""
+    from sectools.config import load_config, save_config
+    config = load_config()
+    current = config.get("strict_scope", False)
+    config["strict_scope"] = not current
+    save_config(config)
+    state = "ON" if config["strict_scope"] else "OFF"
+    console.print(f"[green]✔ Strict scope mode: {state}[/green]")
+
+
 def run(console: Console):
     """Scope Manager sub-menu."""
     while True:
         action = inquirer.select(
             message="Scope Manager:",
-            choices=["View Scope", "Add CIDR", "Add Domain", "Clear Scope", "Back"],
+            choices=["View Scope", "Add CIDR", "Add Domain", "Clear Scope", "Toggle Strict Mode", "Back"],
             pointer="❯",
         ).execute()
 
@@ -114,5 +131,7 @@ def run(console: Console):
             _add_domain(console)
         elif action == "Clear Scope":
             _clear_scope(console)
+        elif action == "Toggle Strict Mode":
+            _toggle_strict(console)
         else:
             break

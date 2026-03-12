@@ -304,6 +304,10 @@ def cmd_help():
         table.add_row(cmd, desc)
 
     console.print(table)
+
+    console.print(f"\n  [bold]Flags:[/bold]")
+    console.print(f"    [cyan]--dry-run[/cyan]   Show commands without executing")
+    console.print(f"    [cyan]--json[/cyan]      Output results as JSON")
     console.print()
 
 
@@ -325,8 +329,23 @@ def main():
         cmd_help()
         sys.exit(1)
 
-    command = sys.argv[1]
-    sys.argv = sys.argv[2:]  # shift args for subcommand use
+    # Parse global flags
+    args = sys.argv[1:]
+    if "--dry-run" in args:
+        from sectools import utils
+        utils.DRY_RUN = True
+        args.remove("--dry-run")
+    if "--json" in args:
+        from sectools import utils
+        utils.JSON_MODE = True
+        args.remove("--json")
+
+    if not args:
+        cmd_help()
+        sys.exit(1)
+
+    command = args[0]
+    sys.argv = args[1:]  # shift args for subcommand use
 
     if command in commands:
         commands[command]()

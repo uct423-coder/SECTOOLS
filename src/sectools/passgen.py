@@ -8,6 +8,7 @@ from InquirerPy import inquirer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from sectools.theme import bold, rule_style
 
 
 def _estimate_strength(length: int, pool_size: int) -> str:
@@ -25,7 +26,7 @@ def _estimate_strength(length: int, pool_size: int) -> str:
 
 def run(console: Console) -> None:
     """Generate secure random passwords."""
-    console.rule("[bold cyan]Password Generator[/bold cyan]", style="cyan")
+    console.rule(bold("Password Generator"), style=rule_style())
     console.print()
 
     try:

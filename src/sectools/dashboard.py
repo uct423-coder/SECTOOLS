@@ -11,6 +11,7 @@ from rich.text import Text
 from sectools.utils import LOGS_DIR, load_targets, TOOL_BINARIES, check_installed
 from sectools.config import load_config
 from sectools.tips import get_tip
+from sectools.theme import primary, accent, bold
 
 VERSION = "2.1.0"
 
@@ -177,7 +178,7 @@ def show_dashboard(console: Console):
     # Recent Scans
     recent = _recent_scans()
     if recent:
-        scan_table = Table(border_style="dim", expand=True, show_header=True, header_style="bold " + theme)
+        scan_table = Table(border_style="dim", expand=True, show_header=True, header_style="bold " + primary())
         scan_table.add_column("Scan Log", style=theme, ratio=3)
         scan_table.add_column("Date / Time", style="dim", ratio=2, justify="center")
         scan_table.add_column("Size", style="dim", ratio=1, justify="right")

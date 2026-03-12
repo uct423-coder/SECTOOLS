@@ -1,6 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
+from sectools.theme import bold, rule_style
 from sectools.utils import run_logged, pick_wordlist, WORDLISTS_DIR, ask_target
 from sectools.config import load_config
 
@@ -15,7 +16,7 @@ PRESETS = {
 
 
 def run(console: Console):
-    console.rule("[bold cyan]Dirb — URL Brute Forcer[/bold cyan]", style="cyan")
+    console.rule(bold("Dirb — URL Brute Forcer"), style=rule_style())
     console.print()
 
     target = ask_target(console, "Target URL:")

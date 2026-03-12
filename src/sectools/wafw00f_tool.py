@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged, ask_target
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Detect WAF": [],
@@ -12,29 +12,27 @@ PRESETS = {
 }
 
 
-def run(console: Console):
-    console.rule("[bold cyan]Wafw00f — WAF Detector[/bold cyan]", style="cyan")
-    console.print()
+class Wafw00fTool(BaseTool):
+    name = "Wafw00f — WAF Detector"
+    binary = "wafw00f"
+    target_prompt = "Target URL:"
 
-    target = ask_target(console, "Target URL:")
-    if not target:
-        return
+    def _build_command(self, console: Console, target: str) -> list[str]:
+        preset = inquirer.select(
+            message="Scan type:",
+            choices=list(PRESETS.keys()),
+            pointer="❯",
+        ).execute()
 
-    preset = inquirer.select(
-        message="Scan type:",
-        choices=list(PRESETS.keys()),
-        pointer="❯",
-    ).execute()
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter wafw00f flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter wafw00f flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
+        if preset == "List all WAFs (wafw00f -l)":
+            return ["wafw00f"] + flags
+        return ["wafw00f"] + flags + [target]
 
-    if preset == "List all WAFs (wafw00f -l)":
-        cmd = ["wafw00f"] + flags
-    else:
-        cmd = ["wafw00f"] + flags + [target]
-
-    run_logged(cmd, console, "wafw00f")
+_tool = Wafw00fTool()
+run = _tool.run

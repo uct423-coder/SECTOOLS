@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged, ask_target
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Standard scan": [],
@@ -11,40 +11,35 @@ PRESETS = {
     "Custom flags": None,
 }
 
-PROTOCOL_CHOICES = [
-    "--tls10",
-    "--tls11",
-    "--tls12",
-    "--tls13",
-]
+PROTOCOL_CHOICES = ["--tls10", "--tls11", "--tls12", "--tls13"]
 
 
-def run(console: Console):
-    console.rule("[bold cyan]SSLScan — TLS/SSL Analyzer[/bold cyan]", style="cyan")
-    console.print()
+class SSLScanTool(BaseTool):
+    name = "SSLScan — TLS/SSL Analyzer"
+    binary = "sslscan"
+    target_prompt = "Host:port (e.g. example.com:443):"
 
-    target = ask_target(console, "Host:port (e.g. example.com:443):")
-    if not target:
-        return
-
-    preset = inquirer.select(
-        message="Scan type:",
-        choices=list(PRESETS.keys()),
-        pointer="❯",
-    ).execute()
-
-    if preset == "Check specific protocol (--tls10/--tls11/--tls12/--tls13)":
-        protocol = inquirer.select(
-            message="Select protocol:",
-            choices=PROTOCOL_CHOICES,
+    def _build_command(self, console: Console, target: str) -> list[str]:
+        preset = inquirer.select(
+            message="Scan type:",
+            choices=list(PRESETS.keys()),
             pointer="❯",
         ).execute()
-        flags = [protocol]
-    elif preset == "Custom flags":
-        flags_str = inquirer.text(message="Enter sslscan flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
 
-    cmd = ["sslscan"] + flags + [target]
-    run_logged(cmd, console, "sslscan")
+        if preset == "Check specific protocol (--tls10/--tls11/--tls12/--tls13)":
+            protocol = inquirer.select(
+                message="Select protocol:",
+                choices=PROTOCOL_CHOICES,
+                pointer="❯",
+            ).execute()
+            flags = [protocol]
+        elif preset == "Custom flags":
+            flags_str = inquirer.text(message="Enter sslscan flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
+
+        return ["sslscan"] + flags + [target]
+
+_tool = SSLScanTool()
+run = _tool.run

@@ -3,6 +3,7 @@
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.panel import Panel
+from sectools.theme import bold, rule_style
 
 
 SHELLS: dict[str, dict[str, str]] = {
@@ -83,7 +84,7 @@ SHELLS: dict[str, dict[str, str]] = {
 
 def run(console: Console) -> None:
     """Generate a reverse shell payload."""
-    console.rule("[bold cyan]Reverse Shell Generator[/bold cyan]", style="cyan")
+    console.rule(bold("Reverse Shell Generator"), style=rule_style())
     console.print()
 
     language = inquirer.select(

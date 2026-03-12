@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged, ask_target
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Enumerate plugins (--enumerate p)": ["--enumerate", "p"],
@@ -15,30 +15,30 @@ PRESETS = {
 }
 
 
-def run(console: Console):
-    console.rule("[bold cyan]WPScan — WordPress Scanner[/bold cyan]", style="cyan")
-    console.print()
+class WPScanTool(BaseTool):
+    name = "WPScan — WordPress Scanner"
+    binary = "wpscan"
+    target_prompt = "Target URL:"
 
-    target = ask_target(console, "Target URL:")
-    if not target:
-        return
+    def _build_command(self, console: Console, target: str) -> list[str] | None:
+        preset = inquirer.select(
+            message="Scan type:",
+            choices=list(PRESETS.keys()) + ["View cheat sheet"],
+            pointer="❯",
+        ).execute()
 
-    preset = inquirer.select(
-        message="Scan type:",
-        choices=list(PRESETS.keys()) + ["View cheat sheet"],
-        pointer="❯",
-    ).execute()
+        if preset == "View cheat sheet":
+            from sectools.cheatsheets import show_cheatsheet
+            show_cheatsheet(console, "wpscan")
+            return None
 
-    if preset == "View cheat sheet":
-        from sectools.cheatsheets import show_cheatsheet
-        show_cheatsheet(console, "wpscan")
-        return
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter wpscan flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter wpscan flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
+        return ["wpscan", "--url", target] + flags
 
-    cmd = ["wpscan", "--url", target] + flags
-    run_logged(cmd, console, "wpscan")
+_tool = WPScanTool()
+run = _tool.run

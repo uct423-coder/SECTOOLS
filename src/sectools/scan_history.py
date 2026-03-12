@@ -9,6 +9,7 @@ from rich.syntax import Syntax
 from InquirerPy import inquirer
 
 from sectools.utils import LOGS_DIR
+from sectools.theme import bold, rule_style, accent
 
 
 def _get_logs() -> list[Path]:
@@ -63,7 +64,7 @@ def _show_table(console: Console, logs: list[Path]):
     """Display a Rich table of all scan logs."""
     table = Table(
         title="[bold]Scan History[/bold]",
-        border_style="bright_cyan",
+        border_style=accent(),
         show_lines=True,
         header_style="bold bright_white on grey23",
         row_styles=["", "on grey11"],
@@ -93,7 +94,7 @@ def _show_table(console: Console, logs: list[Path]):
 def _view_log(console: Console, path: Path):
     """Display the full content of a log file."""
     content = path.read_text(errors="replace")
-    console.rule(f"[bold cyan]{path.name}[/bold cyan]")
+    console.rule(bold(path.name), style=rule_style())
     try:
         syntax = Syntax(content, "text", theme="monokai", line_numbers=True)
         console.print(syntax)
@@ -119,7 +120,7 @@ def _search_logs(console: Console, logs: list[Path]):
     if not keyword:
         return
 
-    console.rule(f"[bold cyan]Search: {keyword}[/bold cyan]")
+    console.rule(bold(f"Search: {keyword}"), style=rule_style())
     found = False
     for log in logs:
         try:

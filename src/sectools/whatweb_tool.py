@@ -1,7 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
-from sectools.utils import run_logged
+from sectools.base_tool import BaseTool
 
 PRESETS = {
     "Quick scan (--aggression 1)": ["--aggression", "1"],
@@ -12,32 +12,38 @@ PRESETS = {
 }
 
 
-def run(console: Console):
-    console.rule("[bold cyan]WhatWeb — Technology Identifier[/bold cyan]", style="cyan")
-    console.print()
+class WhatWebTool(BaseTool):
+    name = "WhatWeb — Technology Identifier"
+    binary = "whatweb"
+    target_prompt = "Target URL:"
 
-    target = inquirer.text(message="Target URL:").execute()
-    if not target or not target.strip():
-        console.print("[red]No target provided.[/red]")
-        return
-    target = target.strip()
+    def _prompt_target(self, console: Console) -> str | None:
+        from InquirerPy import inquirer
+        target = inquirer.text(message="Target URL:").execute()
+        if not target or not target.strip():
+            console.print("[red]No target provided.[/red]")
+            return None
+        return target.strip()
 
-    preset = inquirer.select(
-        message="Scan type:",
-        choices=list(PRESETS.keys()) + ["View cheat sheet"],
-        pointer="❯",
-    ).execute()
+    def _build_command(self, console: Console, target: str) -> list[str] | None:
+        preset = inquirer.select(
+            message="Scan type:",
+            choices=list(PRESETS.keys()) + ["View cheat sheet"],
+            pointer="❯",
+        ).execute()
 
-    if preset == "View cheat sheet":
-        from sectools.cheatsheets import show_cheatsheet
-        show_cheatsheet(console, "whatweb")
-        return
+        if preset == "View cheat sheet":
+            from sectools.cheatsheets import show_cheatsheet
+            show_cheatsheet(console, "whatweb")
+            return None
 
-    if PRESETS[preset] is None:
-        flags_str = inquirer.text(message="Enter whatweb flags:").execute()
-        flags = shlex.split(flags_str)
-    else:
-        flags = PRESETS[preset]
+        if PRESETS[preset] is None:
+            flags_str = inquirer.text(message="Enter whatweb flags:").execute()
+            flags = shlex.split(flags_str)
+        else:
+            flags = PRESETS[preset]
 
-    cmd = ["whatweb"] + flags + [target]
-    run_logged(cmd, console, "whatweb")
+        return ["whatweb"] + flags + [target]
+
+_tool = WhatWebTool()
+run = _tool.run

@@ -31,6 +31,46 @@ ESSENTIAL_WORDLISTS = {
 }
 
 
+import hashlib
+
+# Known SHA-256 checksums for preset wordlists (generated from trusted downloads)
+WORDLIST_SHA256 = {
+    "common.txt": None,  # Trust HTTPS — checksum not yet pinned
+    "top-usernames-shortlist.txt": None,
+    "default-passwords.txt": None,
+}
+
+
+def _verify_sha256(path: Path, expected: str | None) -> bool:
+    """Verify file SHA-256 checksum. Returns True if valid or no checksum available."""
+    if expected is None:
+        return True
+    sha256 = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest() == expected
+
+
+def _download_and_verify(url: str, dest: Path, console: Console) -> bool:
+    """Download a file and verify its checksum if available."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "SecTools/1.0"})
+        resp = urllib.request.urlopen(req, timeout=15)
+        dest.write_bytes(resp.read())
+    except Exception as e:
+        console.print(f"[red]Download failed: {e}[/red]")
+        return False
+
+    expected = WORDLIST_SHA256.get(dest.name)
+    if not _verify_sha256(dest, expected):
+        dest.unlink()
+        console.print(f"[red]Checksum verification failed for {dest.name} — file deleted.[/red]")
+        return False
+
+    return True
+
+
 def ensure_wordlists(console: Console) -> None:
     """Auto-download essential wordlists if missing."""
     WORDLIST_DIR.mkdir(parents=True, exist_ok=True)
@@ -39,13 +79,8 @@ def ensure_wordlists(console: Console) -> None:
         if dest.exists():
             continue
         console.print(f"  [dim]Downloading {filename}...[/dim]", end=" ")
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "SecTools/1.0"})
-            resp = urllib.request.urlopen(req, timeout=15)
-            dest.write_bytes(resp.read())
+        if _download_and_verify(url, dest, console):
             console.print("[green]✔[/green]")
-        except Exception as e:
-            console.print(f"[red]✘ {e}[/red]")
 
 
 def _get_all_wordlists() -> list[Path]:
@@ -142,6 +177,12 @@ def _download_wordlist(console: Console):
                         break
                     f.write(chunk)
                     progress.advance(task, len(chunk))
+
+        expected = WORDLIST_SHA256.get(filename)
+        if not _verify_sha256(dest, expected):
+            dest.unlink()
+            console.print(f"[red]Checksum verification failed — file deleted.[/red]")
+            return
 
         console.print(f"[green]Saved to {dest}[/green]")
     except Exception as e:

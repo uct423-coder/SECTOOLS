@@ -1,14 +1,14 @@
 from rich.console import Console
-from sectools.utils import run_logged, ask_target
+from sectools.base_tool import BaseTool
 
 
-def run(console: Console):
-    console.rule("[bold cyan]Whois — Domain Lookup[/bold cyan]", style="cyan")
-    console.print()
+class WhoisTool(BaseTool):
+    name = "Whois — Domain Lookup"
+    binary = "whois"
+    target_prompt = "Domain or IP:"
 
-    target = ask_target(console, "Domain or IP:")
-    if not target:
-        return
+    def _build_command(self, console: Console, target: str) -> list[str]:
+        return ["whois", target]
 
-    cmd = ["whois", target]
-    run_logged(cmd, console, "whois")
+_tool = WhoisTool()
+run = _tool.run

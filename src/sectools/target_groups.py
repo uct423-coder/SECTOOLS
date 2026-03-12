@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from sectools.theme import bold as th_bold
 
 from InquirerPy import inquirer
 from rich.console import Console
@@ -62,7 +63,7 @@ def _view_groups(console: Console) -> None:
             if m.get("notes"):
                 label += f"  [dim]({m['notes']})[/dim]"
             lines.append(label + "\n")
-        console.print(Panel(lines, title=f"[bold cyan]{group}[/bold cyan]", border_style="dim"))
+        console.print(Panel(lines, title=th_bold(group), border_style="dim"))
     console.print()
 
 

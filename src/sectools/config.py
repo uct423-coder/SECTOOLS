@@ -1,11 +1,18 @@
 import json
 import os
 from pathlib import Path
+from typing import Any
 from rich.console import Console
 from rich.table import Table
 from InquirerPy import inquirer
 
 CONFIG_PATH = Path.home() / ".sectools-config.json"
+
+
+def _get_accent() -> str:
+    """Lazy import to avoid circular dependency with theme module."""
+    from sectools.theme import accent
+    return accent()
 
 DEFAULT_CONFIG = {
     "default_wordlist": str(Path.home() / ".sectools-wordlists" / "default-passwords.txt"),
@@ -15,6 +22,7 @@ DEFAULT_CONFIG = {
     "log_retention_days": 30,
     "auto_save_targets": False,
     "favorites": [],
+    "strict_scope": False,
 }
 
 THEME_CHOICES = ["cyan", "green", "red", "blue", "magenta"]
@@ -37,8 +45,9 @@ def _migrate_config(config: dict) -> bool:
     return changed
 
 
-def load_config() -> dict:
+def load_config() -> dict[str, Any]:
     """Load config from file, filling in defaults for any missing keys."""
+    from sectools.schema import SecToolsConfig
     config = dict(DEFAULT_CONFIG)
     if CONFIG_PATH.exists():
         try:
@@ -49,10 +58,16 @@ def load_config() -> dict:
             pass
     if _migrate_config(config):
         save_config(config)
+    # Validate with pydantic (graceful fallback)
+    try:
+        validated = SecToolsConfig(**config)
+        config.update(validated.model_dump())
+    except Exception:
+        pass
     return config
 
 
-def save_config(config: dict):
+def save_config(config: dict[str, Any]) -> None:
     """Write config dict to the config file."""
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
@@ -76,7 +91,7 @@ def config_menu(console: Console):
         # Display current settings
         table = Table(
             title="[bold]Settings[/bold]",
-            border_style="bright_cyan",
+            border_style=_get_accent(),
             show_lines=True,
             header_style="bold bright_white on grey23",
             row_styles=["", "on grey11"],

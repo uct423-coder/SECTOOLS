@@ -8,6 +8,7 @@ import urllib.parse
 from InquirerPy import inquirer
 from rich.console import Console
 from rich.panel import Panel
+from sectools.theme import bold, rule_style
 
 
 def _b64_encode(text: str) -> str:
@@ -67,7 +68,7 @@ CODECS = {
 
 def run(console: Console) -> None:
     """Encode or decode text using various schemes."""
-    console.rule("[bold cyan]Encoding / Decoding[/bold cyan]", style="cyan")
+    console.rule(bold("Encoding / Decoding"), style=rule_style())
     console.print()
 
     codec_name = inquirer.select(

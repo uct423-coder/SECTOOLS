@@ -1,5 +1,6 @@
 from InquirerPy import inquirer
 from rich.console import Console
+from sectools.theme import bold, rule_style
 from sectools.utils import run_logged, pick_wordlist, WORDLISTS_DIR
 
 MODES = {
@@ -12,7 +13,7 @@ from sectools.config import load_config
 
 
 def run(console: Console):
-    console.rule("[bold cyan]Gobuster — Dir & DNS Brute Force[/bold cyan]", style="cyan")
+    console.rule(bold("Gobuster — Dir & DNS Brute Force"), style=rule_style())
     console.print()
 
     mode = inquirer.select(

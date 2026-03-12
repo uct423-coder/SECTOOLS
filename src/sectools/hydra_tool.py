@@ -1,6 +1,7 @@
 import shlex
 from InquirerPy import inquirer
 from rich.console import Console
+from sectools.theme import bold, rule_style
 from sectools.utils import extract_hostname, run_logged, ask_target, pick_wordlist, WORDLISTS_DIR
 
 SERVICES = ["ssh", "ftp", "http-post-form", "smtp", "mysql", "rdp", "vnc", "telnet"]
@@ -11,7 +12,7 @@ DEFAULT_USERNAMES = str(WORDLISTS_DIR / "top-usernames-shortlist.txt")
 
 
 def run(console: Console):
-    console.rule("[bold cyan]Hydra — Brute Force[/bold cyan]", style="cyan")
+    console.rule(bold("Hydra — Brute Force"), style=rule_style())
     console.print()
 
     target = ask_target(console, "Target (IP/hostname):")

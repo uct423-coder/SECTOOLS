@@ -26,6 +26,7 @@ from sectools.utils import (
 from sectools.config import load_config
 from sectools.http_probe import _get_ssl_info
 from sectools.notifications import notify
+from sectools.theme import bold as th_bold, rule_style, accent, primary
 
 DEFAULT_WORDLIST = load_config().get("default_dirwordlist", str(WORDLISTS_DIR / "common.txt"))
 
@@ -74,7 +75,7 @@ SECURITY_HEADERS = [
 
 def run(console: Console) -> None:
     """Security Assessment Wizard entry point."""
-    console.print("\n[bold cyan]━━━ Security Assessment Wizard ━━━[/bold cyan]\n")
+    console.print(f"\n{th_bold('━━━ Security Assessment Wizard ━━━')}\n")
     console.print("[dim]Automated multi-tool security assessment with reporting.[/dim]\n")
 
     # 1. Target URL
@@ -126,7 +127,7 @@ def run(console: Console) -> None:
         wordlist = "DEFAULT_WORDLIST"
 
     # 5. Summary
-    summary = Table(title="Assessment Plan", border_style="cyan")
+    summary = Table(title="Assessment Plan", border_style=primary())
     summary.add_column("Setting", style="bold")
     summary.add_column("Value")
     summary.add_row("Target", url)
@@ -186,7 +187,7 @@ def _run_assessment(console: Console, config: dict) -> dict:
     console.print()
     console.print(Panel(
         f"[bold bright_white]Running {len(scans)} scan(s) against [cyan]{config['hostname']}[/cyan][/bold bright_white]",
-        border_style="cyan",
+        border_style=primary(),
         padding=(0, 2),
     ))
     console.print()
@@ -243,7 +244,7 @@ def _run_assessment(console: Console, config: dict) -> dict:
     console.print()
     summary_tbl = Table(
         title="[bold]Assessment Results[/bold]",
-        border_style="bright_cyan",
+        border_style=accent(),
         show_lines=True,
         header_style="bold bright_white on grey23",
         row_styles=["", "on grey11"],

@@ -11,6 +11,7 @@ from rich.table import Table
 from InquirerPy import inquirer
 
 from sectools.utils import LOGS_DIR
+from sectools.theme import bold, rule_style
 
 TIMEOUT = 10
 
@@ -125,7 +126,7 @@ def _offer_save(console: Console, prefix: str, content: str):
 
 def run(console: Console):
     """OSINT sub-menu."""
-    console.rule("[bold cyan]OSINT — Subdomain & Recon[/bold cyan]", style="cyan")
+    console.rule(bold("OSINT — Subdomain & Recon"), style=rule_style())
     console.print()
     while True:
         action = inquirer.select(

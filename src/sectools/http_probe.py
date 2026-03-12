@@ -12,6 +12,7 @@ from InquirerPy import inquirer
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from sectools.theme import bold, rule_style
 
 
 class _TitleParser(HTMLParser):
@@ -47,7 +48,7 @@ def _get_ssl_info(hostname: str, port: int) -> dict | None:
 
 def run(console: Console) -> None:
     """Probe a URL and display HTTP response details."""
-    console.rule("[bold cyan]HTTP Probe[/bold cyan]", style="cyan")
+    console.rule(bold("HTTP Probe"), style=rule_style())
     console.print()
 
     url = inquirer.text(message="Enter URL:").execute()
