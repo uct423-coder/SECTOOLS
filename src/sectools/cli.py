@@ -75,6 +75,12 @@ def cmd_update():
         venv_pip = repo / ".venv" / scripts / "pip"
         pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
         subprocess.run([pip_cmd, "install", "-e", str(repo), "--quiet"])
+
+        # Auto-install any missing tools
+        c.print()
+        from sectools.auto_installer import run as auto_install
+        auto_install(c)
+
         c.print(f"\n[bold green]✔ Update complete![/bold green] Restart sectool to use the new version.")
     else:
         from sectools.dashboard import VERSION

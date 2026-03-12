@@ -405,11 +405,24 @@ def _manage_favorites(console: Console):
     save_config(config)
 
 
+def _check_missing_tools(console: Console):
+    """Check for missing tools and offer to install them."""
+    from sectools.utils import TOOL_BINARIES, check_installed
+    missing = [b for b in TOOL_BINARIES.values() if not check_installed(b)]
+    if missing:
+        console.print(f"[yellow]{len(missing)} tool(s) not installed:[/yellow] [dim]{', '.join(missing[:10])}{'...' if len(missing) > 10 else ''}[/dim]")
+        install = inquirer.confirm(message="Install missing tools now?", default=True).execute()
+        if install:
+            from sectools.auto_installer import run as auto_install
+            auto_install(console)
+
+
 def main():
     console.clear()
     if needs_onboarding():
         run_onboarding(console)
     _auto_cleanup(console)
+    _check_missing_tools(console)
     show_dashboard(console)
 
     while True:
