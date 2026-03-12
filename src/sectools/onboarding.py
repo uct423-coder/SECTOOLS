@@ -93,6 +93,16 @@ def run_onboarding(console: Console):
     from sectools.wordlist_mgr import ensure_wordlists
     ensure_wordlists(console)
 
+    # Auto-install missing tools
+    console.print()
+    console.print(Panel(
+        "[bold cyan]Checking for missing tools...[/bold cyan]",
+        border_style="cyan",
+        padding=(0, 2),
+    ))
+    from sectools.auto_installer import run as auto_install
+    auto_install(console)
+
     if setup_scope:
         from sectools.scope import run as scope_menu
         scope_menu(console)
